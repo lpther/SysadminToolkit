@@ -1,4 +1,0 @@
-SysadminToolkit
-===============
-
-Work in progress

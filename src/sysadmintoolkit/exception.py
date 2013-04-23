@@ -21,7 +21,7 @@ class CommandPromptError(SysadminToolkitError):
         self.errdict = {100: 'Alert', \
                         101: 'Could not create commandprompt', \
                         200: 'Critical', \
-                        201: 'Could not instanciate plugin', \
+                        201: 'Could not instantiate plugin', \
                         300: 'Error', \
                         400: 'Warning', \
                         }
@@ -35,10 +35,11 @@ class PluginError(SysadminToolkitError):
 
         self.errdict = {200: 'Critical', \
                         300: 'Error', \
-                        301: 'Error in registering command', \
+                        301: 'Error in registering command or plugin', \
                         302: 'Error in creating the plugin', \
                         303: 'Error in creating the comand', \
                         400: 'Warning', \
+                        401: 'Could not add label to plugin'
                         }
 
         self.plugin = plugin

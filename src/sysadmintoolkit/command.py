@@ -8,10 +8,12 @@ class Command(object):
     def __init__(self, label, plugin_, function):
         '''
         '''
+        from sysadmintoolkit import cmdprompt
+
         # Validate label
-        if isinstance(label, str):
-            self.label = label
-        else:
+        try:
+            self.label = cmdprompt.merge_keywords(cmdprompt.split_label(label))
+        except:
             raise exception.PluginError('Error initializing command : Command instance requires a string (1st arg)', errno=303)
 
         # Validated Plugin
@@ -21,10 +23,7 @@ class Command(object):
             raise exception.PluginError('Error initializing command : Command instance requires a Plugin instance (2nd arg) for label "%s"' % label, errno=303)
 
         # Validate function
-        def dummy_function():
-            pass
-
-        if type(function) == type(dummy_function):
+        if type(function) is type(self.get_label):
             self.function = function
         else:
             raise exception.PluginError('Error initializing command : Command instance requires a function (3rd arg) for label "%s"' % label, errno=303)

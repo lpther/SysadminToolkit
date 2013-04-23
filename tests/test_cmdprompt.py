@@ -1,17 +1,26 @@
+from sysadmintoolkit import exception, plugin, cmdprompt, builtinplugins
+from  sysadmintoolkit.builtinplugins import commandprompt
+import logging
 import unittest
-from sysadmintoolkit import exception, plugin, cmdprompt, logger
+
 
 class CmdPromptTestCase(unittest.TestCase):
-    '''Testing command module
+    '''Testing commandprompt module
     '''
     def setUp(self):
-         pass
+        self.nulllogger = logging.getLogger('null')
+        self.nulllogger.addHandler(logging.NullHandler())
+
+        self.commandpromptplugin = commandprompt.CommandPrompt(self.nulllogger)
 
     def test_bad_instanciation_types(self):
          self.assertRaises(exception.CommandPromptError, cmdprompt.CmdPrompt, None)
          self.assertRaises(exception.CommandPromptError, cmdprompt.CmdPrompt, None, mode=None)
 
     def test_correct_instanciation(self):
-        logger_ = logger.NullLogger('debug')
+        self.assertTrue(cmdprompt.CmdPrompt(self.nulllogger, mode='testcase'))
 
-        self.assertTrue(cmdprompt.CmdPrompt(logger_, mode='testcase'))
+    def test_add_plugin(self):
+        cmd = cmdprompt.CmdPrompt(self.nulllogger, mode='testcase')
+
+        cmd.add_plugin(self.commandpromptplugin)

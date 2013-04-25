@@ -1,4 +1,4 @@
-from sysadmintoolkit import exception
+import sysadmintoolkit
 import logging
 
 
@@ -6,26 +6,28 @@ class Plugin(object):
     '''
     '''
 
-    def __init__(self, name, logger_):
+    def __init__(self, name, logger, config={}):
         '''
         '''
         if isinstance(name, str):
             self.name = name
         else:
-            raise exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)
+            raise sysadmintoolkit.exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)
 
-        if isinstance(logger_, logging.Logger):
-            self.logger = logger_
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
         else:
-            raise exception.CommandPromptError('Error initializing plugin : logger requires a Logger instance (2nd arg)', errno=302)
+            raise sysadmintoolkit.exception.CommandPromptError('Error initializing plugin : logger requires a Logger instance (2nd arg)', errno=302)
 
-        # Plugin's current mode
-        self.currentmode = None
+        # Command prompts that added this module
+        self.cmdstack = []
 
         # Plugin's function to label and mode mapping
         # labelmap[mode] = {}
         # labelmap[mode][label] = function
         self.labelmap = { '' : {} }
+
+        self.config = config
 
     def add_command(self, command_, modes=[]):
         '''
@@ -34,8 +36,8 @@ class Plugin(object):
         '''
         from sysadmintoolkit import command
 
-        if not isinstance(command_, command.Command):
-                raise exception.PluginError('Error adding label : Wrong command type', errno=401)
+        if not isinstance(command_, command.Label):
+                raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong command type', errno=401)
 
         if isinstance(modes, list):
             # Default mode is expected
@@ -46,14 +48,12 @@ class Plugin(object):
                 if isinstance(mode, str):
                     self.labelmap[mode][command_.get_label()] = command_
                 else:
-                    raise exception.PluginError('Error adding label : Wrong mode type', errno=401)
+                    raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong mode type', errno=401)
 
         else:
-            raise exception.PluginError('Error adding label : Label allowed mode requires a list of string', errno=401)
+            raise sysadmintoolkit.exception.PluginError('Error adding label : Label allowed mode requires a list of string', errno=401)
 
         self.logger.debug('Plugin %s added command "%s" to modes %s' % (command_.get_plugin().get_name(), command_.get_label(), modes))
-
-    # Undefined stuff
 
     def get_commands(self, mode):
         '''Returns the list of commands for the requested mode
@@ -70,15 +70,19 @@ class Plugin(object):
 
         return command_list
 
-    def enter_mode(self, mode):
+    def enter_mode(self, cmdprompt):
         '''
         '''
-        self.register_labels(mode)
+        self.cmdstack += [cmdprompt]
 
-    def leave_mode(self, mode):
+        self.logger.debug('Entering mode %s' % (cmdprompt.mode))
+
+    def leave_mode(self, cmdprompt):
         '''
         '''
-        pass
+        lastknowncmdprompt = self.cmdstack.pop()
+
+        self.logger.debug('Leaving mode %s (last known mode is %s)' % (cmdprompt.mode, lastknowncmdprompt.mode))
 
     def get_name(self):
         '''

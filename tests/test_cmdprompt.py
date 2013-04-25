@@ -24,3 +24,6 @@ class CmdPromptTestCase(unittest.TestCase):
         cmd = cmdprompt.CmdPrompt(self.nulllogger, mode='testcase')
 
         cmd.add_plugin(self.commandpromptplugin)
+
+        self.assertTrue('debug' in cmd.command_tree.get_sub_keywords_labels(), True)
+        self.assertTrue('debug commandprompt' in cmd.command_tree.get_sub_keywords_labels(), True)

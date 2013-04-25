@@ -1,6 +1,6 @@
-===============
-SysadminToolkit
-===============
+=====================================================================================
+SysadminToolkit - Easily create CLIs from your many and specialized scripts and tools
+=====================================================================================
 
 Terminology:
 	label		: full command, ex: "display system time"
@@ -8,18 +8,18 @@ Terminology:
 				  contain a special character (see below)
 	
 Reserved labels:
-	"mod ..."			: restrict the scope of the following label to one plugin
+	"mod ..."				: restrict the scope of the following label to one plugin
 	"help <pluginname>"		: display the plugin's main help
-	"exit ..."			: exits current mode, go back to previous mode if available
-	"quit ..."			: exits to shell
-	"set ..."			: change configuration during run time
+	"exit ..."				: exits current mode, go back to previous mode if available
+	"quit ..."				: exits to shell
+	"set ..."				: change configuration during run time
 	
 Special character meanings:
 	" " (space)		: keyword separator
-	?			: contextual help
-	</>			: dynamic keyword
-	\n			: execute current label
-	tab			: command completion
+	?				: contextual help
+	<keyword>		: dynamic keyword
+	\n				: execute current label
+	tab				: command completion
 	
 	Note: All other characters can be used by modules
   
@@ -29,18 +29,30 @@ Current features:
 	Broken
 	
 Initial release features:
-	Functionnal plugins
-	Call from linux's shell
-	commandprompt built-in plugin
+	CLI Features
+	[x]	Call from linux's shell
+		Functional plugins mechanics
+	
+	Built-in plugins
+		commandprompt (debugging)
+		shellcommand  (simple label to shell mapping/help)
+		
+	Installation and configuration
+		Basic configuration file loading, passing the config to plugins
+		Configurable logging 
 	
 Soon after:
-	admin to configure mode switching
-	Describe the target audience
-	Command completion
-	Contextual help
-	Notify plugins to clear cache when changing modes
-	Make setup.py work for install
-	Dynamic keyword support
+	Documentation
+		Describe the target audience
+		Dynamic keyword support
+		
+	CLI Features
+		Command completion
+		Contextual help
+		Notify plugins to clear cache when changing modes
+		
+	Installation and configuration
+		Make setup.py work for install
 	
 Later:
 	Convert to nice md or rst text

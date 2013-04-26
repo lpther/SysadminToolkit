@@ -4,7 +4,16 @@ from sysadmintoolkit import plugin, command, utils
 class CommandPrompt(plugin.Plugin):
     '''
     '''
-    def __init__(self, logger, config={}):
+    @classmethod
+    def get_plugin(cls, config, logger):
+        '''
+        '''
+        if CommandPrompt.plugin is None:
+            CommandPrompt.plugin = CommandPrompt(logger, config)
+
+        return CommandPrompt.plugin
+
+    def __init__(self, logger, config):
         plugin.Plugin.__init__(self, "commandprompt", logger, config)
 
         self.add_command(command.LabelHelp('debug', self, 'Debug plugins'))
@@ -19,19 +28,17 @@ class CommandPrompt(plugin.Plugin):
             self.logger.error('This command must be executed interactively, please execute in the CLI')
             return
 
-        # printstr = ''
-
-        (height, width) = utils.get_terminal_size()
+        width = utils.get_terminal_size()[1]
 
         sep = min(int(width * 0.66), 120)
 
-        header = ''
-        header += '  Command tree\n'
-        header += '  ============\n\n'
-        header += '    Definitions: non executable, %s, %s\n\n' % (utils.get_underline_text('executable'), utils.get_reversed_text('dynamic'))
-        header += '  %s %s\n' % ('Keyword'.ljust(sep), 'Help (plugin)')
-        header += '-' * len('  %s %s\n' % ('Keyword'.ljust(sep), 'Help (plugin)'))
-
-        utils.pager(header, height)
+        print
+        print '  Command tree'
+        print '  ============'
+        print
+        print '    Definitions: non executable, %s, %s' % (utils.get_underline_text('executable'), utils.get_reversed_text('<dynamic>'))
+        print
+        print '  %s %s' % ('Keyword'.ljust(sep), 'Help (plugin)')
+        print '-' * len('  %s %s\n' % ('Keyword'.ljust(sep), 'Help (plugin)'))
 
         print cmdprompt.command_tree.get_sub_keywords_labels()

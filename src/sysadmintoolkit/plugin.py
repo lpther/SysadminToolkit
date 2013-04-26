@@ -5,8 +5,18 @@ import logging
 class Plugin(object):
     '''
     '''
+    plugin = None
 
-    def __init__(self, name, logger, config={}):
+    @classmethod
+    def get_plugin(cls, config, logger):
+        '''
+        '''
+        if Plugin.plugin is None:
+            plugin = Plugin('genericplugin', logger, config)
+
+        return plugin
+
+    def __init__(self, name, logger, config):
         '''
         '''
         if isinstance(name, str):

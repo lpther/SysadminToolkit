@@ -13,7 +13,7 @@ class CommandTestCase(unittest.TestCase):
     def test_bad_instanciation_types(self):
         self.assertRaises(exception.PluginError, command.ExecCommand, None, None, None)
         self.assertRaises(exception.PluginError, command.ExecCommand, 'this is a test case', None, None)
-        self.assertRaises(exception.PluginError, command.ExecCommand, 'this is a test case', plugin.Plugin('testcase-plugin', self.nulllogger), None)
+        self.assertRaises(exception.PluginError, command.ExecCommand, 'this is a test case', plugin.Plugin('testcase-plugin', self.nulllogger, None), None)
 
     def test_correct_instanciation(self):
-        self.assertTrue(command.ExecCommand('this is a test case', plugin.Plugin('testcase-plugin', self.nulllogger), self.setUp))
+        self.assertTrue(command.ExecCommand('this is a test case', plugin.Plugin('testcase-plugin', self.nulllogger, None), self.setUp))

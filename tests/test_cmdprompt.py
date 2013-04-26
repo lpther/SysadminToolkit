@@ -11,7 +11,7 @@ class CmdPromptTestCase(unittest.TestCase):
         self.nulllogger = logging.getLogger('null')
         self.nulllogger.addHandler(logging.NullHandler())
 
-        self.commandpromptplugin = commandprompt.CommandPrompt(self.nulllogger)
+        self.commandpromptplugin = commandprompt.CommandPrompt(self.nulllogger, None)
 
     def test_bad_instanciation_types(self):
          self.assertRaises(exception.CommandPromptError, cmdprompt.CmdPrompt, None)

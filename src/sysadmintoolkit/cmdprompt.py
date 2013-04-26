@@ -39,7 +39,7 @@ class CmdPrompt(cmd.Cmd):
         return ['\n', '\r', '?', '|', '!']
 
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
-                 mode="generic"):
+                 mode="generic", shell_allowed=False, prompt='sysadmin-toolkit# '):
         '''
         '''
         cmd.Cmd.__init__(self, completekey='tab', stdin=None, stdout=None)
@@ -75,7 +75,9 @@ class CmdPrompt(cmd.Cmd):
         except:
             pass
 
-        self.prompt = 'sysadmin-toolkit# '
+        self.prompt = prompt
+
+        self.shell_allowed = shell_allowed
 
     def add_plugin(self, plugin):
         '''Adds the plugin to cmdprompt, and registers the plugin's label to the cmdprompt
@@ -158,14 +160,20 @@ class CmdPrompt(cmd.Cmd):
     def preloop(self):
         '''
         '''
-        for plugin in self.plugins:
-            plugin.enter_mode(self)
+        try:
+            for plugin in self.plugins:
+                plugin.enter_mode(self)
+        except Exception as e:
+            self.logger.warning('Plugin %s failed initializing mode %s:\n%s') % (plugin.get_name(), self.mode, str(e))
 
     def postloop(self):
         '''
         '''
-        for plugin in self.plugins:
-            plugin.leave_mode(self)
+        try:
+            for plugin in self.plugins:
+                plugin.leave_mode(self)
+        except Exception as e:
+            self.logger.warning('Plugin %s failed leaving mode %s:\n%s') % (plugin.get_name(), self.mode, str(e))
 
     def update_window_size(self, width, height):
         '''

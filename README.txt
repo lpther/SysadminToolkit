@@ -52,7 +52,7 @@ Soon after:
 		Notify plugins to clear cache when changing modes
 		
 	Installation and configuration
-		Make setup.py work for install
+		Make setup.py works for install
 	
 Later:
 	Convert to nice md or rst text

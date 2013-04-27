@@ -1,23 +1,32 @@
 from sysadmintoolkit import plugin, command, utils
 
+global plugin_instance
+
+plugin_instance = None
+
+
+def get_plugin(config, logger):
+    '''
+    '''
+    global plugin_instance
+
+    if plugin_instance is None:
+        plugin_instance = CommandPrompt(logger, config)
+
+    return plugin_instance
+
 
 class CommandPrompt(plugin.Plugin):
     '''
     '''
-    @classmethod
-    def get_plugin(cls, config, logger):
-        '''
-        '''
-        if CommandPrompt.plugin is None:
-            CommandPrompt.plugin = CommandPrompt(logger, config)
-
-        return CommandPrompt.plugin
-
     def __init__(self, logger, config):
         super(CommandPrompt, self).__init__("commandprompt", logger, config)
 
         self.add_command(command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(command.ExecCommand('debug commandprompt', self, self.debug))
+
+        self.add_command(command.ExecCommand('dtest debug commandprompt', self, self.debug))
+        self.add_command(command.ExecCommand('dtesting debug commandprompt', self, self.debug))
 
     def debug(self, line, mode):
         print 'Commandprompt plugin printing some debug!'

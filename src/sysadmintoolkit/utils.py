@@ -86,6 +86,19 @@ def print_config_contents(config):
         print
 
 
+def get_matching_prefix(prefix, possibilities):
+    '''
+    Returns the possibilities that match the prefix
+
+    possibilities     list of str
+    prefix            str
+    '''
+    if len(possibilities) is 0:
+        return []
+    else:
+        return [p for p in possibilities if p.startswith(prefix)]
+
+
 def set_config_logging(config, log_destination, log_level):
     '''
     for each config section, set log-destination and log-level to

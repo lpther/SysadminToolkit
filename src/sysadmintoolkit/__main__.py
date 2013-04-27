@@ -103,7 +103,7 @@ if __name__ == '__main__':
     PluginLogger = sysadmintoolkit.utils.get_logger('plugin.commandprompt', dict(config.items('commandprompt')))
 
     if PluginLogger is not None:
-        cmdpromptplugin = commandprompt.CommandPrompt.get_plugin(dict(config.items('commandprompt')), PluginLogger)
+        cmdpromptplugin = commandprompt.get_plugin(dict(config.items('commandprompt')), PluginLogger)
     else:
         CommandPromptLogger.error('Could not initialize logger for %s' % 'commandprompt')
 

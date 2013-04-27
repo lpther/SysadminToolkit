@@ -31,6 +31,10 @@ class Label(object):
             if reserved_character in label:
                 raise sysadmintoolkit.exception.PluginError('Error initializing command : Invalid character in label "%s"' % label, errno=303)
 
+        # Modify to your own risk.
+        # Reserved commands affect how the commandprompt behaves
+        self.__is_reserved = False
+
     def get_label(self):
         '''
         '''
@@ -40,6 +44,11 @@ class Label(object):
         '''
         '''
         return self.plugin
+
+    def is_reserved(self):
+        '''
+        '''
+        return self.__is_reserved
 
 
 class ExecCommand(Label):
@@ -69,18 +78,6 @@ class ExecCommand(Label):
         return self.function
 
 
-class _ReservedExecCommand(ExecCommand):
-    '''
-    _ReservedExecCommand Note: This label can only be registered by the plugin commandprompt
-
-    '''
-
-    def __init__(self, label, plugin, function, allow_conflict=False):
-        '''
-        '''
-        super(_ReservedExecCommand, self).__init__(label, plugin, function, allow_conflict)
-
-
 class LabelHelp(Label):
     '''
     '''
@@ -96,14 +93,3 @@ class LabelHelp(Label):
         '''
         '''
         return self.shorthelp
-
-
-class _ReservedLabelHelp(LabelHelp):
-    '''
-    _ReservedLabelHelp Note: This label can only be registered by the plugin commandprompt
-    '''
-
-    def __init__(self, label, plugin, shorthelp):
-        '''
-        '''
-        super(_ReservedLabelHelp, self).__init__(self, label, plugin, shorthelp)

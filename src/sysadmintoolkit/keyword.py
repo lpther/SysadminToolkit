@@ -26,9 +26,22 @@ class _Keyword(object):
         # Sub CmdLevels
         self.sub_keywords = {}
 
-    def add_keyword_level(self, keyword):
+        self.reserved_only = False
+
+    def add_keyword_level(self, keyword, command):
         '''
         '''
+        if keyword is '*':
+            if len(self.get_sub_keywords_keys()) is not 0 and keyword not in self.get_sub_keywords_keys():
+                # A * keyword cannot coexist with other subkeywords
+                raise sysadmintoolkit.exception.PluginError('Error registering keyword "%s" from plugin %s, other subkeywords already registered '\
+                                                             % (command.getkeyword(), command.getPlugin()))
+
+        if '*' in self.get_sub_keywords_keys() and keyword != '*':
+            # A * keyword cannot coexist with other subkeywords
+            raise sysadmintoolkit.exception.PluginError('Error registering keyword "%s" from plugin %s, other subkeywords already registered '\
+                                                         % (command.getkeyword(), command.getPlugin()))
+
         self.sub_keywords[keyword] = _Keyword(self.logger, keyword=keyword, depth=self.get_depth() + 1)
 
     def add_command(self, keywords, command):
@@ -43,6 +56,13 @@ class _Keyword(object):
 
         if len(keywords) is 0:
             # Add the command at the current level depending on type
+            if self.reserved_only:
+                if not command.is_reserved():
+                    raise sysadmintoolkit.exception.PluginError('Error registering keyword "%s" from plugin %s, insertion of a non-reserved ',
+                                                                'command in a reserved keyword is not allowed' % (command.getkeyword(), command.getPlugin()))
+            if command.is_reserved():
+                self.reserved_only = True
+
             if isinstance(command, sysadmintoolkit.command.ExecCommand):
                 if command.get_plugin().get_name() not in self.executable_commands:
                     self.executable_commands[command.get_plugin().get_name()] = command
@@ -55,7 +75,7 @@ class _Keyword(object):
                     raise sysadmintoolkit.exception.PluginError('Error registering keyword "%s" from plugin %s, a keyword already exists from this module' % (command.getkeyword(), command.getPlugin()))
         else:
             if keywords[0] not in self.sub_keywords:
-                self.add_keyword_level(keywords[0])
+                self.add_keyword_level(keywords[0], command)
 
             self.sub_keywords[keywords[0]].add_command(keywords[1:], command)
 

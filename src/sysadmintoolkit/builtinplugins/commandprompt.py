@@ -22,8 +22,13 @@ class CommandPrompt(plugin.Plugin):
     def __init__(self, logger, config):
         super(CommandPrompt, self).__init__("commandprompt", logger, config)
 
-        self.add_command(command.LabelHelp('debug', self, 'Debug plugins'))
-        self.add_command(command.ExecCommand('debug commandprompt', self, self.debug))
+        debug_help = command.LabelHelp('debug', self, 'Debug plugins')
+        debug_help.__Label__is_reserved = True
+        self.add_command(debug_help)
+
+        debug_commandprompt = command.ExecCommand('debug commandprompt', self, self.debug)
+        debug_commandprompt.__Label__is_reserved = True
+        self.add_command(debug_commandprompt)
 
         self.add_command(command.ExecCommand('dtest debug commandprompt', self, self.debug))
         self.add_command(command.ExecCommand('dtesting debug commandprompt', self, self.debug))

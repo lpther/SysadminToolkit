@@ -14,7 +14,7 @@ class CommandPrompt(plugin.Plugin):
         return CommandPrompt.plugin
 
     def __init__(self, logger, config):
-        plugin.Plugin.__init__(self, "commandprompt", logger, config)
+        super(CommandPrompt, self).__init__("commandprompt", logger, config)
 
         self.add_command(command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(command.ExecCommand('debug commandprompt', self, self.debug))

@@ -58,8 +58,6 @@ class _Keyword(object):
     def get_sub_keywords_labels(self):
         '''Returns a dict of all sub_keywords labels mapped to a list of properties
         '''
-        from sysadmintoolkit import cmdprompt
-
         if self.keyword is None:
             keywords_dict = { }
             localkeyword = ''
@@ -73,7 +71,8 @@ class _Keyword(object):
 
             for subkeyword in subkeywordsdict.keys():
                 # For each subkeyword, merge with current keyword
-                keywords_dict[cmdprompt.CmdPrompt.merge_keywords([localkeyword] + cmdprompt.CmdPrompt.split_label(subkeyword))] = subkeywordsdict[subkeyword]
+                keywords_dict[sysadmintoolkit.cmdprompt.CmdPrompt.merge_keywords([localkeyword] + \
+                              sysadmintoolkit.cmdprompt.CmdPrompt.split_label(subkeyword))] = subkeywordsdict[subkeyword]
 
         return keywords_dict
 

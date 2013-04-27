@@ -15,11 +15,9 @@ class Label(object):
                                                to the function
         plugin      Plugin   Plugin instance
         '''
-        from sysadmintoolkit import cmdprompt
-
         # Validate label
         try:
-            self.label = cmdprompt.CmdPrompt.merge_keywords(cmdprompt.CmdPrompt.split_label(label))
+            self.label = sysadmintoolkit.cmdprompt.CmdPrompt.merge_keywords(sysadmintoolkit.cmdprompt.CmdPrompt.split_label(label))
         except:
             raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a string (1st arg)', errno=303)
 
@@ -29,7 +27,7 @@ class Label(object):
         else:
             raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a Plugin instance (2nd arg) for label "%s"' % label, errno=303)
 
-        for reserved_character in cmdprompt.CmdPrompt.get_reserved_characters():
+        for reserved_character in sysadmintoolkit.cmdprompt.CmdPrompt.get_reserved_characters():
             if reserved_character in label:
                 raise sysadmintoolkit.exception.PluginError('Error initializing command : Invalid character in label "%s"' % label, errno=303)
 
@@ -47,8 +45,8 @@ class Label(object):
 class ExecCommand(Label):
     '''
     '''
+
     def __init__(self, label, plugin, function, allow_conflict=False):
-        Label.__init__.__doc__ + \
         '''
         function     method   A method defined in the calling plugin.
                               def function(self, line, mode)
@@ -57,7 +55,7 @@ class ExecCommand(Label):
                               -> Command prompt Mode
 
         '''
-        Label.__init__(self, label, plugin)
+        super(ExecCommand, self).__init__(label, plugin)
 
         # Validate function
         if type(function) is type(self.get_label):
@@ -72,16 +70,15 @@ class ExecCommand(Label):
 
 
 class _ReservedExecCommand(ExecCommand):
-    ExecCommand.__doc__ + \
     '''
-    Note: This label can only be registered by the plugin commandprompt
+    _ReservedExecCommand Note: This label can only be registered by the plugin commandprompt
+
     '''
 
     def __init__(self, label, plugin, function, allow_conflict=False):
-        ExecCommand.__init__.__doc__ + \
         '''
         '''
-        ExecCommand.__init__(self, label, plugin, function, allow_conflict)
+        super(_ReservedExecCommand, self).__init__(label, plugin, function, allow_conflict)
 
 
 class LabelHelp(Label):
@@ -89,10 +86,9 @@ class LabelHelp(Label):
     '''
 
     def __init__(self, label, plugin, shorthelp):
-        Label.__init__.__doc__ + \
         '''
         '''
-        Label.__init__(self, label, plugin)
+        super(LabelHelp, self).__init__(label, plugin)
 
         self.shorthelp = shorthelp.strip().splitlines()[0]
 
@@ -103,13 +99,11 @@ class LabelHelp(Label):
 
 
 class _ReservedLabelHelp(LabelHelp):
-    LabelHelp.__doc__ + \
     '''
-    Note: This label can only be registered by the plugin commandprompt
+    _ReservedLabelHelp Note: This label can only be registered by the plugin commandprompt
     '''
 
     def __init__(self, label, plugin, shorthelp):
-        LabelHelp.__init__.__doc__ + \
         '''
         '''
-        LabelHelp.__init__(self, label, plugin, shorthelp)
+        super(_ReservedLabelHelp, self).__init__(self, label, plugin, shorthelp)

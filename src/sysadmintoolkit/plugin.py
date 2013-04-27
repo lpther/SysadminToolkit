@@ -39,14 +39,12 @@ class Plugin(object):
 
         self.config = config
 
-    def add_command(self, command_, modes=[]):
+    def add_command(self, command, modes=[]):
         '''
         mode    [str]    list of allowed modes for this label.
                          Empty list all modes allowed.
         '''
-        from sysadmintoolkit import command
-
-        if not isinstance(command_, command.Label):
+        if not isinstance(command, sysadmintoolkit.command.Label):
                 raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong command type', errno=401)
 
         if isinstance(modes, list):
@@ -56,14 +54,14 @@ class Plugin(object):
 
             for mode in modes:
                 if isinstance(mode, str):
-                    self.labelmap[mode][command_.get_label()] = command_
+                    self.labelmap[mode][command.get_label()] = command
                 else:
                     raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong mode type', errno=401)
 
         else:
             raise sysadmintoolkit.exception.PluginError('Error adding label : Label allowed mode requires a list of string', errno=401)
 
-        self.logger.debug('Plugin %s added command "%s" to modes %s' % (command_.get_plugin().get_name(), command_.get_label(), modes))
+        self.logger.debug('Plugin %s added command "%s" to modes %s' % (command.get_plugin().get_name(), command.get_label(), modes))
 
     def get_commands(self, mode):
         '''Returns the list of commands for the requested mode

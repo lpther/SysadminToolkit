@@ -37,6 +37,10 @@ class _Keyword(object):
 
         keywords    list    list of keywords relative to the position in the tree
         '''
+        # Add the plugin no matter what command type
+        if command.get_plugin().get_name() not in self.plugins:
+            self.plugins[command.get_plugin().get_name()] = command.get_plugin()
+
         if len(keywords) is 0:
             # Add the command at the current level depending on type
             if isinstance(command, sysadmintoolkit.command.ExecCommand):
@@ -84,11 +88,25 @@ class _Keyword(object):
         '''
         return self.depth
 
-    def get_sub_keywords_keys(self):
-        keywords = self.sub_keywords.keys()
-        keywords.sort()
+    def get_sub_keywords_keys(self, plugin_scope=None):
+        if plugin_scope is None:
+            keywords = self.sub_keywords.keys()
+            keywords.sort()
+        else:
+            keywords = []
 
+            for sub_keyword_key in self.sub_keywords.keys():
+                if plugin_scope in self.get_sub_keyword(sub_keyword_key).get_plugins():
+                    keywords += [sub_keyword_key]
+
+        keywords.sort()
         return keywords
+
+    def get_sub_keyword(self, strkeyword):
+        return self.sub_keywords[strkeyword]
+
+    def get_plugins(self):
+        return self.plugins.keys()
 
     def get_keyword(self):
         '''

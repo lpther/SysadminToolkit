@@ -2,17 +2,51 @@ import sysadmintoolkit
 import cmd
 import readline
 import logging
+import pprint
 
 
 class CmdPrompt(cmd.Cmd):
     '''
     '''
     @classmethod
-    def split_label(cls, label):
-        '''Returns a list of keywords from the label
+    def split_label(cls, label, first_keyword_only=False, preserve_spaces=False):
+        '''
+        Returns a list of keywords from the label
+
+        first_keyword_only    bool      Only the first keyword is poped, the rest of
+                                        the list is the rest of the label unchanged
+        preserve_spaces       bool      Do not remove trailing spaces for the returned keyword list
+                                        (for help printing)
         '''
         if isinstance(label, str):
-            return label.split()
+            if label is '':
+                if first_keyword_only:
+                    return ['', '']
+                else:
+                    return ['']
+
+            if first_keyword_only:
+                first_keyword = label.split()[0]
+
+                rest_of_label = label.split(' ')
+                rest_of_label.remove(first_keyword)
+
+                return [first_keyword, ' '.join(rest_of_label).strip()]
+            else:
+                if not preserve_spaces:
+                    return label.split()
+                else:
+                    keywords = []
+                    current_keyword = label.split(' ')[0]
+                    for token in label.split(' ')[1:]:
+                        if token is '':
+                            current_keyword += ' '
+                        else:
+                            keywords += [current_keyword]
+                            current_keyword = token
+
+                    return keywords
+
         else:
             raise sysadmintoolkit.exception.SysadminToolkitError('Label is not string type')
 
@@ -39,7 +73,8 @@ class CmdPrompt(cmd.Cmd):
         return ['\n', '\r', '?', '|', '!']
 
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
-                 mode="generic", shell_allowed=False, prompt='sysadmin-toolkit# '):
+                 mode="generic", prompt='sysadmin-toolkit# ',
+                 shell_allowed=False, is_interactive=True):
         '''
         '''
         cmd.Cmd.__init__(self, completekey='tab', stdin=None, stdout=None)
@@ -57,7 +92,7 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug('New command prompt in mode %s ' % mode)
 
         # Switching readline delims for allowed characters
-        readline.set_completer_delims(' \n')
+        readline.set_completer_delims(' \n\r')
 
         self.logger.debug('  raw readline completer delims="%s"' % readline.get_completer_delims().__repr__())
         self.logger.debug('  identchars="%s"' % self.identchars)
@@ -75,9 +110,11 @@ class CmdPrompt(cmd.Cmd):
         except:
             pass
 
+        self.shell_allowed = shell_allowed
+
         self.prompt = prompt
 
-        self.shell_allowed = shell_allowed
+        self.is_interactive = is_interactive
 
     def add_plugin(self, plugin):
         '''Adds the plugin to cmdprompt, and registers the plugin's label to the cmdprompt
@@ -111,34 +148,52 @@ class CmdPrompt(cmd.Cmd):
 
     # Redefining commands from cmd.CMD
 
-    def default(self, line):
+    def default(self, line, plugin_scope=None):
         """
         Handle command line input and take appropriate action
         """
         self.logger.debug("Command Prompt: default: line='%s'" % (line))
         self.logger.debug("  lastcmd='%s'" % (self.lastcmd))
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
+        self.logger.debug("  plugin_scope='%s'" % (plugin_scope))
 
-        if line in self.command_tree.get_sub_keywords_labels():
-            # Line is found as is in the command tree
-            label_parameters = self.command_tree.get_sub_keywords_labels()[line]
+        statusdict = self.get_line_status(line, plugin_scope)
 
-            if len(label_parameters['executable_commands']) is not 0:
-                # At least one command found, label can be executed
-                plugin_names = label_parameters['executable_commands'].keys()
-                plugin_names.sort()
+        if statusdict['status'] is 'match':
+            # The command matches to a label in the keyword tree
+            # Action: Execute the command (if allowed by the commands)
+            print "we have a match with %s" % line
+            # return execute_command(self, statusdict, line)
 
-                for plugin_name in plugin_names:
-                    exec_command = label_parameters['executable_commands'][plugin_name]
+        elif statusdict['status'] is 'no_match':
+            # There is no matching label in the keyword tree,
+            # Action: Display error message for the bad keyword
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
 
-                    exec_command.get_function()(line, self.mode)
+            self.print_cli_error(len(self.prompt + ok_keywords), 'No matching command found !')
 
+            if not self.is_interactive:
+                return 1
             else:
-                # This is not an executable label
-                print
-                print '>> %s ^ missing input' % (' ' * (len(self.prompt) + len(line) - 2))
-        else:
-            pass
+                return
+
+        elif statusdict['status'] is 'conflict':
+            # More than one label matches the keyword
+            # Action: Display error message about the conflicting keyword
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+
+            self.print_cli_error(len(self.prompt + ok_keywords), 'Conflict found! Either type "use <plugin> cmd" or type the complete command')
+
+            # The conflict is not at the end of the command
+            # Action: Display conflicting keywords and their related plugins
+            self.print_conflict_keywords(statusdict)
+
+            if not self.is_interactive:
+                return 1
+            else:
+                return
+
+        return
 
     def complete_default(self, text, line, begidx, endidx):
         '''
@@ -157,6 +212,93 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug("  lastcmd='%s'" % (self.lastcmd))
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
 
+    def get_line_status(self, line, plugin_scope=None):
+        '''
+        Analyze the user input and return the status
+
+        pluginscope        str        Restrict matches to this module
+        '''
+        self.logger.debug('Line analysis started for line "%s" in mode %s (scope is %s)' % (line, self.mode, plugin_scope))
+        pp = pprint.PrettyPrinter(indent=2)
+
+        statusdict = {'expanded_label': '',
+                      'plugin_scope': plugin_scope}
+
+        keyword_tree = self.command_tree
+        rest_of_line = line
+        keyword_pos = 1
+
+        while True:
+            [this_keyword, rest_of_line] = self.split_label(rest_of_line, first_keyword_only=True)
+
+            possible_keywords = keyword_tree.get_sub_keywords_keys()
+
+            matching_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_keywords)
+
+            self.logger.debug('-' * 50)
+            self.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, rest_of_line))
+            self.logger.debug('possible_keywords=%s' % possible_keywords)
+            self.logger.debug('matching_keywords="%s"' % matching_keywords)
+
+            statusdict['keyword'] = this_keyword
+            statusdict['keyword_tree'] = keyword_tree
+            statusdict['keyword_pos'] = keyword_pos
+            statusdict['matching_keywords'] = matching_keywords
+            statusdict['rest_of_line'] = rest_of_line
+
+            if this_keyword is '':
+                # End of user input for this label
+                statusdict['status'] = 'match'
+                statusdict['keyword_pos'] = keyword_pos - 1
+                break
+
+            if len(matching_keywords) is 1:
+                # Only one match, dig deeper in the keyword tree
+                keyword_tree = keyword_tree.get_sub_keyword(matching_keywords[0])
+                statusdict['expanded_label'] = self.merge_keywords([statusdict['expanded_label']] + [matching_keywords[0]])
+                keyword_pos += 1
+
+            elif len(matching_keywords) is 0:
+                statusdict['status'] = 'no_match'
+                break
+
+            elif len(matching_keywords) > 1:
+                statusdict['status'] = 'conflict'
+                break
+
+            else:
+                statusdict['status'] = ('ERROR: Command analysis failed with user input "%s" in mode %s' % (line, self.mode))
+                break
+
+        self.logger.debug('-' * 50)
+        self.logger.debug('Line analysis ended for line "%s" in mode %s' % (line, self.mode))
+        self.logger.debug('Analysis is: \n' + pp.pformat(statusdict))
+
+        return statusdict
+
+    def print_cli_error(self, pos, errmsg):
+        '''
+        '''
+        print ''.ljust(pos) + ' ^---+ %s' % errmsg
+
+    def print_conflict_keywords(self, statusdict):
+        '''
+        '''
+        sep = 30
+        print
+        print '  %s %s' % ('Keyword'.ljust(sep), 'Plugins')
+        print '  %s %s' % ('======='.ljust(sep), '=======')
+        for matching_keyword in statusdict['matching_keywords']:
+            print '  %s %s' % (matching_keyword.ljust(sep), ','.join(statusdict['keyword_tree'].get_plugins()))
+
+        print
+
+    def print_help_message(self, command_list):
+        '''
+        '''
+        for command in command_list:
+            print "printing help message for %s" % command
+
     def preloop(self):
         '''
         '''
@@ -174,6 +316,10 @@ class CmdPrompt(cmd.Cmd):
                 plugin.leave_mode(self)
         except Exception as e:
             self.logger.warning('Plugin %s failed leaving mode %s:\n%s') % (plugin.get_name(), self.mode, str(e))
+
+    def emptyline(self):
+        """Override the default emptyline and return a blank line."""
+        pass
 
     def update_window_size(self, width, height):
         '''

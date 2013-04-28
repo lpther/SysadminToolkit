@@ -41,9 +41,6 @@ class CommandPrompt(plugin.Plugin):
         help_cmd._Label__is_reserved = True
         self.add_command(help_cmd)
 
-#        self.add_command(command.ExecCommand('dtest debug commandprompt', self, self.debug))
-#        self.add_command(command.ExecCommand('dtesting debug commandprompt', self, self.debug))
-
     def debug(self, line, mode):
         '''
         Displays registered commands in the current Command Prompt

@@ -72,6 +72,10 @@ class CmdPrompt(cmd.Cmd):
         '''
         return ['\n', '\r', '?', '|', '!']
 
+    @classmethod
+    def is_dynamic_keyword(cls, keyword):
+        return keyword.startswith('<') and keyword.endswith('>')
+
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
                  mode="generic", prompt='sysadmin-toolkit# ',
                  shell_allowed=False, is_interactive=True):
@@ -163,6 +167,13 @@ class CmdPrompt(cmd.Cmd):
             # The command matches to a label in the keyword tree
             # Action: Execute the command (if allowed by the commands)
             print "we have a match with %s" % line
+            executable_commands = statusdict['keyword_tree'].get_executable_commands()
+
+            keys = executable_commands.keys()
+            keys.sort()
+
+            for keycmd in keys:
+                executable_commands[keycmd].get_function()(line, self.mode)
             # return execute_command(self, statusdict, line)
 
         elif statusdict['status'] is 'no_match':

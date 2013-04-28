@@ -1,4 +1,4 @@
-from sysadmintoolkit import plugin, command, utils, exception
+import sysadmintoolkit
 
 global plugin_instance
 
@@ -16,42 +16,44 @@ def get_plugin(config, logger):
     return plugin_instance
 
 
-class CommandPrompt(plugin.Plugin):
+class CommandPrompt(sysadmintoolkit.plugin.Plugin):
     '''
     '''
     def __init__(self, logger, config):
         super(CommandPrompt, self).__init__("commandprompt", logger, config)
 
-        self.add_command(command.LabelHelp('debug', self, 'Debug plugins'))
-        self.add_command(command.ExecCommand('debug commandprompt', self, self.debug))
+        self.add_command(sysadmintoolkit.command.LabelHelp('debug', self, 'Debug plugins'))
+        self.add_command(sysadmintoolkit.command.ExecCommand('debug commandprompt', self, self.debug))
 
-        use_help = command.LabelHelp('use', self, 'Restrict the command to a specific plugin')
+        use_help = sysadmintoolkit.command.LabelHelp('use', self, 'Restrict the command to a specific plugin')
         use_help._Label__is_reserved = True
         self.add_command(use_help)
 
-        use_cmd = command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
+        use_cmd = sysadmintoolkit.command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
         use_cmd._Label__is_reserved = True
         self.add_command(use_cmd)
 
-        help_help = command.LabelHelp('help', self, 'Displays plugin help page')
+        help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
         help_help._Label__is_reserved = True
         self.add_command(help_help)
 
-        help_cmd = command.ExecCommand('help <plugin>', self, self.show_plugin_help)
+        help_cmd = sysadmintoolkit.command.ExecCommand('help <plugin>', self, self.show_plugin_help)
         help_cmd._Label__is_reserved = True
         self.add_command(help_cmd)
 
-        exit_cmd = command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
+        exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
         exit_cmd._Label__is_reserved = True
         self.add_command(exit_cmd)
 
-        quit_cmd = command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
+        quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
         quit_cmd._Label__is_reserved = True
         self.add_command(quit_cmd)
 
-        set_cmd = command.ExecCommand('set', self, self.change_global_config)
+        set_cmd = sysadmintoolkit.command.ExecCommand('set', self, self.change_global_config)
         set_cmd._Label__is_reserved = True
         self.add_command(set_cmd)
+
+        self.add_dynamic_keyword_fn('<plugin>', self.get_plugins_for_use_cmd)
 
     def debug(self, line, mode):
         '''
@@ -63,7 +65,7 @@ class CommandPrompt(plugin.Plugin):
             self.logger.error('This command must be executed interactively, please execute in the CLI')
             return
 
-        width = utils.get_terminal_size()[1]
+        width = sysadmintoolkit.utils.get_terminal_size()[1]
 
         window_ratio = 0.55
         max_block_size = 150
@@ -74,7 +76,8 @@ class CommandPrompt(plugin.Plugin):
         print '  Command tree (%s)' % cmdprompt.mode
         print '  ' + ('=' * len('Command tree (%s)' % cmdprompt.mode))
         print
-        print '    Definitions: non executable, %s, %s' % (utils.get_underline_text('executable'), utils.get_reversed_text('<dynamic>'))
+        print '    Definitions: non executable, %s, %s' % (sysadmintoolkit.utils.get_underline_text('executable'), \
+                                                           sysadmintoolkit.utils.get_reversed_text('<dynamic>'))
         print
         print '  %s%s' % ('Keyword'.ljust(first_block_len), 'Help (plugin)')
         print '-' * (first_block_len + second_block_len)
@@ -88,17 +91,17 @@ class CommandPrompt(plugin.Plugin):
             labelstr = ''
             for keyword in cmdprompt.split_label(label)[:-1]:
                 if cmdprompt.is_dynamic_keyword(keyword):
-                    keyword = utils.get_reversed_text(keyword)
+                    keyword = sysadmintoolkit.utils.get_reversed_text(keyword)
 
-                labelstr += utils.get_grey_text(keyword) + ' '
+                labelstr += sysadmintoolkit.utils.get_grey_text(keyword) + ' '
 
             lastkeyword = cmdprompt.split_label(label)[-1]
 
             if cmdprompt.is_dynamic_keyword(lastkeyword):
-                lastkeyword = utils.get_reversed_text(lastkeyword)
+                lastkeyword = sysadmintoolkit.utils.get_reversed_text(lastkeyword)
 
             if len(labeldict[label]['executable_commands']) > 0:
-                lastkeyword = utils.get_underline_text(lastkeyword)
+                lastkeyword = sysadmintoolkit.utils.get_underline_text(lastkeyword)
 
             labelstr += lastkeyword
 
@@ -141,11 +144,19 @@ class CommandPrompt(plugin.Plugin):
                 else:
                     left_block = blank_text_block
 
-                utils.print_text_blocks([left_block, right_block])
+                sysadmintoolkit.utils.print_text_blocks([left_block, right_block])
 
                 print
 
         print
+
+    def get_plugins_for_use_cmd(self, dyn_keyword):
+        plugins = self.cmdstack[-1].get_plugins().keys()
+
+        map_dyn_keyword = {}
+
+        for plugin in plugins:
+            map_dyn_keyword[plugin] = 'Restrict the scope to %s' % plugin
 
     def cmd_input_with_scope(self, line, mode):
         print 'cmd input with scope not implemented yet !!'
@@ -161,4 +172,4 @@ class CommandPrompt(plugin.Plugin):
 
     def change_global_config(self, line, mode):
         print 'change global config not implemented yet !!'
-        raise exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)
+        raise sysadmintoolkit.exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)

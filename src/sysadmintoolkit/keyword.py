@@ -100,9 +100,6 @@ class _Keyword(object):
 
         return keywords_dict
 
-    def is_executable(self):
-        return len(self.executable_commands.keys()) > 0
-
     def get_depth(self):
         '''
         '''
@@ -125,10 +122,8 @@ class _Keyword(object):
     def get_sub_keyword(self, strkeyword):
         return self.sub_keywords[strkeyword]
 
+    def get_executable_commands(self):
+        return self.executable_commands
+
     def get_plugins(self):
         return self.plugins.keys()
-
-    def get_keyword(self):
-        '''
-        '''
-        return self.keyword

@@ -75,6 +75,9 @@ Out of scope:
 		fibre channel toolkit
 		infiniband toolkit
 	
+* Requires
+	pyparsing
+	
 * Thanks
 
 Khosrow Ebrahimpour for is invaluable talent and charisma

@@ -39,7 +39,8 @@ class PluginError(SysadminToolkitError):
                         302: 'Error in creating the plugin', \
                         303: 'Error in creating the comand', \
                         400: 'Warning', \
-                        401: 'Could not add label to plugin'
+                        401: 'Could not add label to plugin', \
+                        402: 'Could not add dynamic keyword to plugin', \
                         }
 
         self.plugin = plugin

@@ -35,7 +35,8 @@ class Plugin(object):
         # Plugin's function to label and mode mapping
         # labelmap[mode] = {}
         # labelmap[mode][label] = function
-        self.labelmap = { '' : {} }
+        self.label_map = { '' : {} }
+        self.dyn_keyword_map = { '': {} }
 
         self.config = config
 
@@ -54,29 +55,70 @@ class Plugin(object):
 
             for mode in modes:
                 if isinstance(mode, str):
-                    self.labelmap[mode][command.get_label()] = command
+                    self.label_map[mode][command.get_label()] = command
                 else:
                     raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong mode type', errno=401)
 
         else:
             raise sysadmintoolkit.exception.PluginError('Error adding label : Label allowed mode requires a list of string', errno=401)
 
-        self.logger.debug('Plugin %s added command "%s" to modes %s' % (command.get_plugin().get_name(), command.get_label(), modes))
+        self.logger.debug('Plugin %s added command "%s" to modes %s' % (self.get_name(), command.get_label(), modes))
+
+    def add_dynamic_keyword_fn(self, dyn_keyword, fn, modes=[]):
+        '''
+        dyn_keyword    str        Format: "<mykeyword>"
+        fn             method     plugin.fn() must return a list of string
+                                  for possible keywords
+        '''
+        if not isinstance(dyn_keyword, str):
+                raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : Keyword must be a string' \
+                                                            % self.get_name(), errno=402)
+
+        if not isinstance(fn, type(self.add_dynamic_keyword_fn)):
+                raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : The function type os not correct' \
+                                                            % self.get_name(), errno=402)
+
+        if isinstance(modes, list):
+            # Default mode is expected
+            if len(modes) is 0:
+                modes = ['']
+
+            for mode in modes:
+                if isinstance(mode, str):
+                    self.dyn_keyword_map[mode][dyn_keyword] = fn
+                else:
+                    raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : Wrong mode type' \
+                                                                % self.get_name(), errno=402)
+
+        else:
+            raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : Label allowed mode requires a list of string' \
+                                                        % self.get_name(), errno=402)
+
+        self.logger.debug('Plugin %s added dynamic keyword "%s" to modes %s' % (self.get_name(), dyn_keyword, modes))
 
     def get_commands(self, mode):
         '''Returns the list of commands for the requested mode
         '''
-        if mode not in self.labelmap:
+        if mode not in self.label_map:
             return []
         else:
-            labels = self.labelmap[mode].keys()
+            labels = self.label_map[mode].keys()
 
             command_list = []
 
             for label in labels:
-                command_list += [self.labelmap[mode][label]]
+                command_list += [self.label_map[mode][label]]
 
         return command_list
+
+    def get_dyn_keyword_list(self, dyn_keyword, mode):
+        if mode not in self.dyn_keyword_map:
+            mode = ''
+
+        if dyn_keyword in self.dyn_keyword_map[mode]:
+            return self.dyn_keyword_map[mode][dyn_keyword]()
+        else:
+            return []
 
     def enter_mode(self, cmdprompt):
         '''

@@ -13,11 +13,11 @@ class CmdPromptTestCase(unittest.TestCase):
 
         self.commandpromptplugin = commandprompt.CommandPrompt(self.nulllogger, None)
 
-    def test_bad_instanciation_types(self):
+    def test_bad_instantiation_types(self):
          self.assertRaises(exception.CommandPromptError, cmdprompt.CmdPrompt, None)
          self.assertRaises(exception.CommandPromptError, cmdprompt.CmdPrompt, None, mode=None)
 
-    def test_correct_instanciation(self):
+    def test_correct_instantiation(self):
         self.assertTrue(cmdprompt.CmdPrompt(self.nulllogger, mode='testcase'))
 
     def test_add_plugin(self):

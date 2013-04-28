@@ -47,7 +47,15 @@ def indent_text(text, indent=2, width=80, keep_newline=True):
 
 def print_text_blocks(blocks):
     '''
-    block    [(str,window%,maxwidth)]    Prints the str for a ratio of window size, without exceeding maxwidth
+    block    [{'str':str,
+               'window_ratio':float,
+               'maxwidth':int,
+               'wrap':bool}]
+    Prints the str for a ratio of window size, without
+    exceeding maxwidth.
+
+    If wrap is false, the text is no wrapped (and mess up the pretty output)
+    (textwrap cannot parse colors). Wrap is not mandatory.
     '''
     window_width = get_terminal_size()[1]
 
@@ -55,12 +63,18 @@ def print_text_blocks(blocks):
     vertical_blocks_len = []
 
     for block in blocks:
-        (blockstr, window_ratio, maxwidth) = block
+        blockstr, window_ratio, maxwidth = block['str'], block['window_ratio'], block['maxwidth']
 
         width = min(int(window_width * window_ratio), int(maxwidth))
 
-        vertical_blocks += [(textwrap.wrap(blockstr, width=width), width)]
-        vertical_blocks_len += [len(textwrap.wrap(blockstr, width=width))]
+        if 'wrap' in block and not block['wrap']:
+        # The best thing would be to wrap a string while preserving the ascii colors
+            uncolored_blockstr = ansi_color_stripper(blockstr)
+            vertical_blocks += [([blockstr], width)]
+            vertical_blocks_len += [1]
+        else:
+            vertical_blocks += [(textwrap.wrap(blockstr, width=width), width)]
+            vertical_blocks_len += [len(textwrap.wrap(blockstr, width=width))]
 
     for index in range(max(vertical_blocks_len)):
         for vertical_block in vertical_blocks:
@@ -69,9 +83,13 @@ def print_text_blocks(blocks):
             if len(blockstr) > index:
                 # Remove ansi color chars as they mess up string lengths
                 uncolored_blockstr = ansi_color_stripper(blockstr[index])
-                nb_ansi_color_chars = len(blockstr[index]) - len(uncolored_blockstr)
+                nb_ansi_color_chars = blockstr[index].count('\x1b') * 4
 
-                print blockstr[index].ljust(width) + (' ' * nb_ansi_color_chars),
+                if not nb_ansi_color_chars:
+                    print blockstr[index].ljust(width),
+                else:
+                    # FIXME: Until textwrap/ljust words with ascii colors
+                    print blockstr[index] + (' ' * (width - len(uncolored_blockstr))),
             else:
                 print ' ' * width,
 

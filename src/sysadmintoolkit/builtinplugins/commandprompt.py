@@ -55,8 +55,8 @@ class CommandPrompt(plugin.Plugin):
 
         window_ratio = 0.55
         max_block_size = 150
-        first_block_len = min(width, int(max_block_size * window_ratio))
-        second_block_len = min(width, int(max_block_size * (1 - window_ratio)))
+        first_block_len = int(min(width, max_block_size) * window_ratio) - 1
+        second_block_len = int(min(width, max_block_size) * (1 - window_ratio)) - 1
 
         print
         print '  Command tree (%s)' % cmdprompt.mode
@@ -64,7 +64,7 @@ class CommandPrompt(plugin.Plugin):
         print
         print '    Definitions: non executable, %s, %s' % (utils.get_underline_text('executable'), utils.get_reversed_text('<dynamic>'))
         print
-        print '  %s%s' % ('Keyword'.ljust(first_block_len - 1), 'Help (plugin)')
+        print '  %s%s' % ('Keyword'.ljust(first_block_len), 'Help (plugin)')
         print '-' * (first_block_len + second_block_len)
 
         labeldict = cmdprompt.command_tree.get_sub_keywords_labels()
@@ -90,8 +90,8 @@ class CommandPrompt(plugin.Plugin):
 
             labelstr += lastkeyword
 
-            label_text_block = ('  %s' % labelstr, window_ratio, max_block_size * window_ratio)
-            blank_text_block = (' ', window_ratio, max_block_size * window_ratio)
+            label_text_block = {'str': '%s' % labelstr, 'window_ratio': window_ratio, 'maxwidth': max_block_size * window_ratio, 'wrap': False}
+            blank_text_block = {'str': ' ', 'window_ratio': window_ratio, 'maxwidth': max_block_size * window_ratio, 'wrap': True}
 
             # Build the label help blocks
             label_help_blocks = []
@@ -100,8 +100,11 @@ class CommandPrompt(plugin.Plugin):
             label_help_plugins.sort()
 
             for plugin in label_help_plugins:
-                label_help_blocks += [('%s (%s)' % (labeldict[label]['help'][plugin].get_shorthelp(), plugin), \
-                                       1 - window_ratio, max_block_size * (1 - window_ratio))]
+                label_help_blocks += [{'str':'%s (%s)' % (labeldict[label]['help'][plugin].get_shorthelp(), plugin), \
+                                       'window_ratio': 1 - window_ratio, \
+                                       'maxwidth': max_block_size * (1 - window_ratio), \
+                                       'wrap': True
+                                       }]
 
             # Build the command help blocks
             command_help_blocks = []
@@ -110,8 +113,11 @@ class CommandPrompt(plugin.Plugin):
             command_help_plugins.sort()
 
             for plugin in command_help_plugins:
-                command_help_blocks += [('%s (%s)' % (labeldict[label]['executable_commands'][plugin].get_shorthelp(), \
-                                                         plugin), 1 - window_ratio, max_block_size * (1 - window_ratio))]
+                command_help_blocks += [{'str': '%s (%s)' % (labeldict[label]['executable_commands'][plugin].get_shorthelp(), plugin), \
+                                         'window_ratio': 1 - window_ratio, \
+                                         'maxwidth': max_block_size * (1 - window_ratio), \
+                                         'wrap': True
+                                         }]
 
             # Print all the gathered information
             output_so_far = False

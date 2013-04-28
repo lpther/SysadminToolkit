@@ -10,10 +10,10 @@ class PluginTestCase(unittest.TestCase):
         self.nulllogger = logging.getLogger('null')
         self.nulllogger.addHandler(logging.NullHandler())
 
-    def test_bad_instanciation_types(self):
+    def test_bad_instantiation_types(self):
         self.assertRaises(exception.CommandPromptError, plugin.Plugin, None, None, None)
 
-    def test_correct_instanciation(self):
+    def test_correct_instantiation(self):
         self.assertTrue(plugin.Plugin('testcase-plugin', self.nulllogger, None), None)
 
     def test_basic_properties_getters_setters(self):

@@ -12,6 +12,8 @@ class _Keyword(object):
         self.depth = depth
 
         # Pluginname to Plugin mapping
+        # All plugins that registered commands that traversed
+        # this keyword are added here.
         self.plugins = {}
 
         # Pluginname to Commands mapping
@@ -99,6 +101,23 @@ class _Keyword(object):
                               sysadmintoolkit.cmdprompt.CmdPrompt.split_label(subkeyword))] = subkeywordsdict[subkeyword]
 
         return keywords_dict
+
+    def get_sub_keywords_dyn_keywords(self, mode):
+        '''
+        Returns a map of all sub_keywords that are dynamic, mapped to a list
+        of plugins registered to this sub_keyword
+
+        {'<dyn_keyword>':[plugins], etc...}
+        '''
+        sub_keywords_keys = self.get_sub_keywords_keys()
+
+        sub_dyn_keywords = {}
+
+        for keyword in sub_keywords_keys:
+            if sysadmintoolkit.cmdprompt.CmdPrompt.is_dynamic_keyword(keyword):
+                sub_dyn_keywords[keyword] = self.get_sub_keyword[keyword].get_plugins()
+
+        return sub_dyn_keywords
 
     def get_depth(self):
         '''

@@ -67,8 +67,8 @@ class Plugin(object):
     def add_dynamic_keyword_fn(self, dyn_keyword, fn, modes=[]):
         '''
         dyn_keyword    str        Format: "<mykeyword>"
-        fn             method     plugin.fn() must return a list of string
-                                  for possible keywords
+        fn             method     plugin.fn("<mykeyword>") must return a map of 'a_keyword':'shorthelp'
+                                  for possible keywords for <mykeyword>
         '''
         if not isinstance(dyn_keyword, str):
                 raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : Keyword must be a string' \

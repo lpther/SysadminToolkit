@@ -108,7 +108,8 @@ if __name__ == '__main__':
         CommandPromptLogger.error('Could not initialize logger for %s' % 'commandprompt')
 
     # Instantiate the main command prompt at the correct mode
-    admincmdprompt = sysadmintoolkit.cmdprompt.CmdPrompt(CommandPromptLogger, mode='admin', shell_allowed=not args.disable_shell)
+    admincmdprompt = sysadmintoolkit.cmdprompt.CmdPrompt(CommandPromptLogger, mode='admin', \
+                                                         shell_allowed=not args.disable_shell, is_interactive=len(args.cmd) is 0)
 
     def SIGWINCH_handler(signum=None, frame=None):
         (height, width) = sysadmintoolkit.utils.get_terminal_size()

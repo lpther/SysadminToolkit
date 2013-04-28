@@ -72,6 +72,8 @@ class ExecCommand(Label):
         else:
             raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a function (3rd arg) for label "%s"' % label, errno=303)
 
+        self.allow_conflict = allow_conflict
+
     def get_function(self):
         '''
         '''
@@ -84,6 +86,11 @@ class ExecCommand(Label):
             return self.function.__doc__.strip().splitlines()[0]
         else:
             return 'No help available'
+
+    def is_conflict_allowed(self):
+        '''
+        '''
+        return self.allow_conflict
 
 
 class LabelHelp(Label):

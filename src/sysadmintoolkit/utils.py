@@ -1,7 +1,6 @@
 import os
 import textwrap
 import sys
-import tty
 import termios
 import fcntl
 import struct
@@ -46,6 +45,39 @@ def indent_text(text, indent=2, width=80, keep_newline=True):
         return out
 
 
+def print_text_blocks(blocks):
+    '''
+    block    [(str,window%,maxwidth)]    Prints the str for a ratio of window size, without exceeding maxwidth
+    '''
+    window_width = get_terminal_size()[1]
+
+    vertical_blocks = []
+    vertical_blocks_len = []
+
+    for block in blocks:
+        (blockstr, window_ratio, maxwidth) = block
+
+        width = min(int(window_width * window_ratio), int(maxwidth))
+
+        vertical_blocks += [(textwrap.wrap(blockstr, width=width), width)]
+        vertical_blocks_len += [len(textwrap.wrap(blockstr, width=width))]
+
+    for index in range(max(vertical_blocks_len)):
+        for vertical_block in vertical_blocks:
+            (blockstr, width) = vertical_block
+
+            if len(blockstr) > index:
+                # Remove ansi color chars as they mess up string lengths
+                uncolored_blockstr = ansi_color_stripper(blockstr[index])
+                nb_ansi_color_chars = len(blockstr[index]) - len(uncolored_blockstr)
+
+                print blockstr[index].ljust(width) + (' ' * nb_ansi_color_chars),
+            else:
+                print ' ' * width,
+
+        print
+
+
 def get_reversed_text(text):
     return '\033[7m' + text + '\033[0m'
 
@@ -60,6 +92,10 @@ def get_underline_text(text):
 
 def get_dark_text(text):
     return '\033[2m' + text + '\033[0m'
+
+
+def get_grey_text(text):
+    return '\033[37m' + text + '\033[0m'
 
 
 def print_config_contents(config):
@@ -113,47 +149,6 @@ def set_config_logging(config, log_destination, log_level):
 
         if log_level is not None:
             config.set(section, 'log-level', log_level)
-
-
-def pager(text, height):
-    ''''
-    print lines to screen and mimic behaviour of MORE command
-
-    # Code from: http://code.activestate.com/recipes/134892/ and
-    # https://raw.github.com/khosrow/lvsm/master/lvsm/utils.py
-
-    '''
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-    more = ' ' + get_reversed_text('-- More -- ')
-
-    i = 0
-    if text is not None:
-        for line in text.splitlines():
-            i = i + 1
-            if height and i is int(height):
-                print more + "\r",
-                ch = getch()
-                # erase the "-- More --"
-                print "             \r",
-                # pressing 'q' will go back to prompt
-                # pressing 'enter' will advance by 1 line
-                # otherwise show next page
-                if ord(ch) == 113:
-                    return
-                elif ord(ch) == 13:
-                    i = i - 1
-                else:
-                    i = 0
-            print line.rstrip()
 
 
 def get_logging_level(strlevel):
@@ -299,3 +294,19 @@ def get_logger(name, config, logger=None):
             logger.debug('Logger(s) initialized for %s' % name)
 
     return newlogger
+
+
+def ansi_color_stripper(rawtext):
+    '''
+    Ref: http://stackoverflow.com/questions/2186919/getting-correct-string-length-in-python-for-strings-with-ansi-color-codes
+    '''
+    from pyparsing import Literal, Word, Combine, Optional, oneOf, Suppress, delimitedList, alphas, nums
+
+    ESC = Literal('\x1b')
+    integer = Word(nums)
+    escapeSeq = Combine(ESC + '[' + Optional(delimitedList(integer, ';')) + oneOf(list(alphas)))
+
+    nonAnsiString = lambda rawtext: Suppress(escapeSeq).transformString(rawtext)
+
+    unColorString = nonAnsiString(rawtext)
+    return unColorString

@@ -76,6 +76,11 @@ class CmdPrompt(cmd.Cmd):
     def is_dynamic_keyword(cls, keyword):
         return keyword.startswith('<') and keyword.endswith('>')
 
+    @classmethod
+    def get_matching_dyn_prefix(cls, keyword, keyword_tree):
+        pass
+        # keyword_tree.
+
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
                  mode="generic", prompt='sysadmin-toolkit# ',
                  shell_allowed=False, is_interactive=True):
@@ -267,13 +272,19 @@ class CmdPrompt(cmd.Cmd):
 
         return []
 
-    def complete(self, text, state):
+    def complete(self, text, state, plugin_scope=None):
         '''
         '''
         self.logger.debug("\nCommand Prompt: complete: text='%s' state=%s" % (text, state))
         self.logger.debug("  completiontype=%s" % (readline.get_completion_type()))
         self.logger.debug("  lastcmd='%s'" % (self.lastcmd))
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
+
+        line = readline.get_line_buffer()
+
+        statusdict = self.get_line_status(line, plugin_scope)
+
+        return statusdict
 
     def get_line_status(self, line, plugin_scope=None):
         '''
@@ -285,7 +296,8 @@ class CmdPrompt(cmd.Cmd):
         pp = pprint.PrettyPrinter(indent=2)
 
         statusdict = {'expanded_label': '',
-                      'plugin_scope': plugin_scope}
+                      'plugin_scope': plugin_scope,
+                      'matching_dyn_keyword': {}}
 
         keyword_tree = self.command_tree
         rest_of_line = line
@@ -297,6 +309,8 @@ class CmdPrompt(cmd.Cmd):
             possible_keywords = keyword_tree.get_sub_keywords_keys()
 
             matching_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_keywords)
+
+            # matching_dyn_keywords = self.get_matching_dyn_prefix(this_keyword, keyword_tree)
 
             self.logger.debug('-' * 50)
             self.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, rest_of_line))
@@ -371,7 +385,7 @@ class CmdPrompt(cmd.Cmd):
         '''
         '''
         if self.is_interactive:
-            prefix = ''.ljust(pos) + ' ^---+ '
+            prefix = ''.ljust(pos) + ' ^--- '
         else:
             prefix = 'CLI Error: '
 

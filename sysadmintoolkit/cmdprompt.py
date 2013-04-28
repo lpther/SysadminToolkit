@@ -140,6 +140,9 @@ class CmdPrompt(cmd.Cmd):
         for command in plugin.get_commands(''):
             self.register_command(command)
 
+    def get_plugins(self):
+        return self.plugins
+
     def register_command(self, command):
         '''
         '''
@@ -166,15 +169,46 @@ class CmdPrompt(cmd.Cmd):
         if statusdict['status'] is 'exec_commands':
             # The command matches to a label in the keyword tree
             # Action: Execute the command (if allowed by the commands)
-            print "we have a match with %s" % line
             executable_commands = statusdict['keyword_tree'].get_executable_commands()
 
             keys = executable_commands.keys()
             keys.sort()
 
             for keycmd in keys:
-                executable_commands[keycmd].get_function()(line, self.mode)
-            # return execute_command(self, statusdict, line)
+                if len(keys) > 0:
+                    print '** Executing command from %s **' % executable_commands[keycmd].get_plugin().get_name()
+
+                try:
+                    return_code = executable_commands[keycmd].get_function()(line, self.mode)
+
+                    if not self.is_interactive:
+                        return return_code
+                    else:
+                        return
+
+                except Exception as e:
+                    self.logger.error('Error executing label %s with plugin %s in mode %s:\n%s' % \
+                                 (statusdict['expanded_label'], executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
+
+                    print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
+
+                    if not self.is_interactive:
+                        return 401
+                    else:
+                        return
+
+        elif statusdict['status'] is 'command_conflict':
+            # One or more commands are executable, but they do not allow conflict
+            # Action: Display error message
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            leading_whitespaces = len(line) - len(line.lstrip())
+
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specigy plugin !')
+
+            if not self.is_interactive:
+                return 403
+            else:
+                return
 
         elif statusdict['status'] is 'no_command_match':
             # There is a matching label but no matching executable command
@@ -188,7 +222,7 @@ class CmdPrompt(cmd.Cmd):
                 self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found for plugin %s !' % plugin_scope)
 
             if not self.is_interactive:
-                return 1
+                return 402
             else:
                 return
 
@@ -201,7 +235,7 @@ class CmdPrompt(cmd.Cmd):
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
 
             if not self.is_interactive:
-                return 1
+                return 402
             else:
                 return
 
@@ -218,7 +252,7 @@ class CmdPrompt(cmd.Cmd):
             self.print_conflict_keywords(statusdict)
 
             if not self.is_interactive:
-                return 1
+                return 403
             else:
                 return
 

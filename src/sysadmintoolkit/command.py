@@ -77,6 +77,14 @@ class ExecCommand(Label):
         '''
         return self.function
 
+    def get_shorthelp(self):
+        '''
+        '''
+        if self.function.__doc__ is not None:
+            return self.function.__doc__.strip().splitlines()[0]
+        else:
+            return 'No help available'
+
 
 class LabelHelp(Label):
     '''
@@ -92,4 +100,4 @@ class LabelHelp(Label):
     def get_shorthelp(self):
         '''
         '''
-        return self.shorthelp
+        return self.shorthelp.strip().splitlines()[0]

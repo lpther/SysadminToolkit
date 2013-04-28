@@ -1,4 +1,4 @@
-from sysadmintoolkit import plugin, command, utils
+from sysadmintoolkit import plugin, command, utils, exception
 
 global plugin_instance
 
@@ -29,7 +29,7 @@ class CommandPrompt(plugin.Plugin):
         use_help._Label__is_reserved = True
         self.add_command(use_help)
 
-        use_cmd = command.ExecCommand('use <pluginname> <*>', self, self.cmd_input_with_scope)
+        use_cmd = command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
         use_cmd._Label__is_reserved = True
         self.add_command(use_cmd)
 
@@ -37,9 +37,21 @@ class CommandPrompt(plugin.Plugin):
         help_help._Label__is_reserved = True
         self.add_command(help_help)
 
-        help_cmd = command.ExecCommand('help <pluginname>', self, self.show_plugin_help)
+        help_cmd = command.ExecCommand('help <plugin>', self, self.show_plugin_help)
         help_cmd._Label__is_reserved = True
         self.add_command(help_cmd)
+
+        exit_cmd = command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
+        exit_cmd._Label__is_reserved = True
+        self.add_command(exit_cmd)
+
+        quit_cmd = command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
+        quit_cmd._Label__is_reserved = True
+        self.add_command(quit_cmd)
+
+        set_cmd = command.ExecCommand('set', self, self.change_global_config)
+        set_cmd._Label__is_reserved = True
+        self.add_command(set_cmd)
 
     def debug(self, line, mode):
         '''
@@ -136,7 +148,17 @@ class CommandPrompt(plugin.Plugin):
         print
 
     def cmd_input_with_scope(self, line, mode):
-        pass
+        print 'cmd input with scope not implemented yet !!'
 
     def show_plugin_help(self, line, mode):
-        pass
+        print 'show plugin help not implemented yet !!'
+
+    def exit_last_commandprompt_level(self, line, mode):
+        print 'exit last command prompt level not implemented yet !!'
+
+    def exit_all_commandprompt_levels(self, line, mode):
+        print 'exit all command prompts not implemented yet !!'
+
+    def change_global_config(self, line, mode):
+        print 'change global config not implemented yet !!'
+        raise exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)

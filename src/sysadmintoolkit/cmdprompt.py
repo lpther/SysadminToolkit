@@ -16,7 +16,7 @@ class CmdPrompt(cmd.Cmd):
         first_keyword_only    bool      Only the first keyword is poped, the rest of
                                         the list is the rest of the label unchanged
         preserve_spaces       bool      Do not remove trailing spaces for the returned keyword list
-                                        (for help printing)
+                                        (to help printing)
         '''
         if isinstance(label, str):
             if label is '':
@@ -163,7 +163,7 @@ class CmdPrompt(cmd.Cmd):
 
         statusdict = self.get_line_status(line, plugin_scope)
 
-        if statusdict['status'] is 'match':
+        if statusdict['status'] is 'exec_commands':
             # The command matches to a label in the keyword tree
             # Action: Execute the command (if allowed by the commands)
             print "we have a match with %s" % line
@@ -176,24 +176,42 @@ class CmdPrompt(cmd.Cmd):
                 executable_commands[keycmd].get_function()(line, self.mode)
             # return execute_command(self, statusdict, line)
 
-        elif statusdict['status'] is 'no_match':
-            # There is no matching label in the keyword tree,
-            # Action: Display error message for the bad keyword
+        elif statusdict['status'] is 'no_command_match':
+            # There is a matching label but no matching executable command
+            # Action: Display error message for the keyword
             ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            leading_whitespaces = len(line) - len(line.lstrip())
 
-            self.print_cli_error(len(self.prompt + ok_keywords), 'No matching command found !')
+            if plugin_scope is None:
+                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found !')
+            else:
+                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found for plugin %s !' % plugin_scope)
 
             if not self.is_interactive:
                 return 1
             else:
                 return
 
-        elif statusdict['status'] is 'conflict':
+        elif statusdict['status'] is 'no_label_match':
+            # There is no matching label in the keyword tree,
+            # Action: Display error message for the bad keyword
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            leading_whitespaces = len(line) - len(line.lstrip())
+
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
+
+            if not self.is_interactive:
+                return 1
+            else:
+                return
+
+        elif statusdict['status'] is 'label_conflict':
             # More than one label matches the keyword
             # Action: Display error message about the conflicting keyword
             ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            leading_whitespaces = len(line) - len(line.lstrip())
 
-            self.print_cli_error(len(self.prompt + ok_keywords), 'Conflict found! Either type "use <plugin> cmd" or type the complete command')
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Conflict found! Either type "use <plugin> cmd" or type the complete command')
 
             # The conflict is not at the end of the command
             # Action: Display conflicting keywords and their related plugins
@@ -256,11 +274,39 @@ class CmdPrompt(cmd.Cmd):
             statusdict['keyword_pos'] = keyword_pos
             statusdict['matching_keywords'] = matching_keywords
             statusdict['rest_of_line'] = rest_of_line
+            statusdict['commands'] = []
 
             if this_keyword is '':
                 # End of user input for this label
-                statusdict['status'] = 'match'
                 statusdict['keyword_pos'] = keyword_pos - 1
+
+                execplugins = keyword_tree.get_executable_commands().keys()
+                execplugins.sort()
+
+                conflicting_commands = 0
+                executable_commands = []
+
+                for plugin in execplugins:
+                    if plugin_scope is None or plugin_scope == plugin:
+                        executable_commands += [keyword_tree.get_executable_commands()[plugin]]
+
+                        if keyword_tree.get_executable_commands()[plugin].is_conflict_allowed():
+                            conflicting_commands += 1
+
+                if (conflicting_commands is 0 and len(executable_commands) >= 1) or \
+                    (conflicting_commands is 1 and len(executable_commands) is 1):
+
+                    statusdict['status'] = 'exec_commands'
+                    statusdict['commands'] = executable_commands
+
+                elif conflicting_commands > 1:
+                    statusdict['status'] = 'command_conflict'
+                    statusdict['commands'] = executable_commands
+
+                else:
+                    statusdict['status'] = 'no_command_match'
+                    statusdict['commands'] = executable_commands
+
                 break
 
             if len(matching_keywords) is 1:
@@ -270,11 +316,11 @@ class CmdPrompt(cmd.Cmd):
                 keyword_pos += 1
 
             elif len(matching_keywords) is 0:
-                statusdict['status'] = 'no_match'
+                statusdict['status'] = 'no_label_match'
                 break
 
             elif len(matching_keywords) > 1:
-                statusdict['status'] = 'conflict'
+                statusdict['status'] = 'label_conflict'
                 break
 
             else:
@@ -290,7 +336,12 @@ class CmdPrompt(cmd.Cmd):
     def print_cli_error(self, pos, errmsg):
         '''
         '''
-        print ''.ljust(pos) + ' ^---+ %s' % errmsg
+        if self.is_interactive:
+            prefix = ''.ljust(pos) + ' ^---+ '
+        else:
+            prefix = 'CLI Error: '
+
+        print prefix + errmsg
 
     def print_conflict_keywords(self, statusdict):
         '''
@@ -331,6 +382,29 @@ class CmdPrompt(cmd.Cmd):
     def emptyline(self):
         """Override the default emptyline and return a blank line."""
         pass
+
+    def parseline(self, line):
+        """
+        We must override the parseline to preverse leading whitespace for
+        proper help.
+
+        Since cmd is an old style class, it must be redefined
+        """
+        # line = line.strip()
+        if not line:
+            return None, None, line
+        elif line[0] == '?':
+            line = 'help ' + line[1:]
+        elif line[0] == '!':
+            if hasattr(self, 'do_shell'):
+                line = 'shell ' + line[1:]
+            else:
+                return None, None, line
+        i, n = 0, len(line)
+        while i < n and line[i] in self.identchars:
+            i = i + 1
+        cmd, arg = line[:i], line[i:].strip()
+        return cmd, arg, line
 
     def update_window_size(self, width, height):
         '''

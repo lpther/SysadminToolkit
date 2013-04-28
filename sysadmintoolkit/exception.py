@@ -6,8 +6,12 @@ class SysadminToolkitError(Exception):
         Exception.__init__(self)
 
         self.errno = errno
+        self.errmsg = errmsg
 
         self.errdict = {}
+
+    def __str__(self):
+        return "%s: %s (error %s)" % (str(self.__class__).split("'")[1].split('.')[-1], self.errmsg, self.errno)
 
 
 class CommandPromptError(SysadminToolkitError):
@@ -24,6 +28,9 @@ class CommandPromptError(SysadminToolkitError):
                         201: 'Could not instantiate plugin', \
                         300: 'Error', \
                         400: 'Warning', \
+                        401: 'Plugin command returned exception', \
+                        402: 'Command or label had no match in registered commands', \
+                        403: 'Label or command conflict detected'
                         }
 
 

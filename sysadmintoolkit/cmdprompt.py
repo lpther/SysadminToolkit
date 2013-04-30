@@ -169,24 +169,19 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
         self.logger.debug("  plugin_scope='%s'" % (plugin_scope))
 
-#        statusdict = self.get_line_status(line, plugin_scope)
-        statusdict = {}
-
         user_input = _UserInput(line, self, plugin_scope)
-        print user_input
-        return
 
-        if statusdict['status'] is 'exec_commands':
+        if user_input.status is 'exec_commands':
             # The command matches to a label in the keyword tree
             # Action: Execute the command (if allowed by the commands)
-            executable_commands = statusdict['keyword_tree'].get_executable_commands()
+            executable_commands = user_input.keyword_list[-1].get_executable_commands()
 
             keys = executable_commands.keys()
             keys.sort()
 
             for keycmd in keys:
-                if len(keys) > 0:
-                    print '** Executing command from %s **' % executable_commands[keycmd].get_plugin().get_name()
+                if len(keys) > 1:
+                    print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
 
                 try:
                     return_code = executable_commands[keycmd].get_function()(line, self.mode)
@@ -198,7 +193,7 @@ class CmdPrompt(cmd.Cmd):
 
                 except Exception as e:
                     self.logger.error('Error executing label %s with plugin %s in mode %s:\n%s' % \
-                                 (statusdict['expanded_label'], executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
+                                 (' '.join(user_input.matching_keyword_list), executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
 
                     print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
 
@@ -207,10 +202,10 @@ class CmdPrompt(cmd.Cmd):
                     else:
                         return
 
-        elif statusdict['status'] is 'command_conflict':
+        elif user_input.status is 'command_conflict':
             # One or more commands are executable, but they do not allow conflict
             # Action: Display error message
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
             leading_whitespaces = len(line) - len(line.lstrip())
 
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specigy plugin !')
@@ -220,10 +215,10 @@ class CmdPrompt(cmd.Cmd):
             else:
                 return
 
-        elif statusdict['status'] is 'no_command_match':
+        elif user_input.status is 'no_command_match':
             # There is a matching label but no matching executable command
             # Action: Display error message for the keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
             leading_whitespaces = len(line) - len(line.lstrip())
 
             if plugin_scope is None:
@@ -236,10 +231,10 @@ class CmdPrompt(cmd.Cmd):
             else:
                 return
 
-        elif statusdict['status'] is 'no_label_match':
+        elif user_input.status is 'no_label_match':
             # There is no matching label in the keyword tree,
             # Action: Display error message for the bad keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
             leading_whitespaces = len(line) - len(line.lstrip())
 
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
@@ -249,17 +244,17 @@ class CmdPrompt(cmd.Cmd):
             else:
                 return
 
-        elif statusdict['status'] is 'label_conflict':
+        elif user_input.status is 'label_conflict':
             # More than one label matches the keyword
             # Action: Display error message about the conflicting keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:statusdict['keyword_pos'] - 1])
+            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
             leading_whitespaces = len(line) - len(line.lstrip())
 
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Conflict found! Either type "use <plugin> cmd" or type the complete command')
 
             # The conflict is not at the end of the command
             # Action: Display conflicting keywords and their related plugins
-            self.print_conflict_keywords(statusdict)
+            self.print_conflict_keywords(user_input)
 
             if not self.is_interactive:
                 return 403
@@ -295,7 +290,7 @@ class CmdPrompt(cmd.Cmd):
         '''
         '''
         if self.is_interactive:
-            prefix = ''.ljust(pos) + ' ^--- '
+            prefix = ''.ljust(pos - 1) + ' ^--- '
         else:
             prefix = 'CLI Error: '
 
@@ -394,11 +389,14 @@ class _UserInput(object):
         # Matching keywords for all levels
         self.matching_keyword_list = []
 
+        # Match type for all keywords
+        self.matching_keyword_type_list = []
+
         # List of _Keyword for all positions
         self.keyword_list = [self.cmdprompt.command_tree]
 
-        # Map of position:dyn_keywords
-        self.dyn_keywords = {}
+        # List of {dyn_keywords:{plugin:shorthelp}}
+        self.dyn_keywords = []
 
         # List of commands to execute
         self.executable_commands = []
@@ -406,7 +404,7 @@ class _UserInput(object):
         self.analyze_cmd()
 
     def __str__(self):
-        pp = pprint.PrettyPrinter(indent=2)
+        pp = pprint.PrettyPrinter(indent=4)
 
         outstr = []
 
@@ -414,6 +412,7 @@ class _UserInput(object):
         outstr.append('input_keyword_list=%s' % pp.pformat(self.input_keyword_list))
         outstr.append('matching_keyword_list=%s' % pp.pformat(self.matching_keyword_list))
         outstr.append('dyn_keywords=%s' % pp.pformat(self.dyn_keywords))
+        outstr.append('match_types=%s' % pp.pformat(self.matching_keyword_type_list))
         outstr.append('rest_of_line="%s"' % self.rest_of_line)
         outstr.append('status=%s' % self.status)
 
@@ -426,14 +425,38 @@ class _UserInput(object):
         while True:
             [this_keyword, self.rest_of_line] = CmdPrompt.split_label(self.rest_of_line, first_keyword_only=True)
 
-            possible_keywords = self.keyword_list[-1].get_sub_keywords_keys()
+            possible_static_keywords = self.keyword_list[-1].get_sub_keywords_keys()
 
-            self.matching_keyword_list.append(sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_keywords))
+            self.dyn_keywords.append(self.keyword_list[-1].get_sub_keyword_dyn_keyword_possibilities(self.cmdprompt.mode))
+
+            print self.dyn_keywords[-1]
+
+            matching_static_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_static_keywords)
+            matching_dynamic_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, self.dyn_keywords[-1].keys())
+
+            # Prioritize static keywords over dynamic
+            match_type = 'no_match'
+
+            if len(matching_static_keywords) > 0:
+                self.matching_keyword_list.append(matching_static_keywords)
+                match_type = 'static'
+            else:
+                matching_dyn_keyword_labels = []
+
+                for dyn_keyword in matching_dynamic_keywords:
+                    matching_dyn_keyword_labels.append(self.dyn_keywords[-1][dyn_keyword]['dyn_keyword_label'])
+                    match_type = 'dynamic'
+
+                self.matching_keyword_list.append(matching_dyn_keyword_labels)
+
+            self.matching_keyword_type_list.append(match_type)
 
             self.cmdprompt.logger.debug('-' * 50)
             self.cmdprompt.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, self.rest_of_line))
-            self.cmdprompt.logger.debug('possible_keywords=%s' % possible_keywords)
+            self.cmdprompt.logger.debug('possible_keywords=%s' % possible_static_keywords)
             self.cmdprompt.logger.debug('matching_keywords="%s"' % self.matching_keyword_list[-1])
+            self.cmdprompt.logger.debug('matching_static=%s' % matching_static_keywords)
+            self.cmdprompt.logger.debug('matching_dynamic=%s' % matching_dynamic_keywords)
 
             self.input_keyword_list.append(this_keyword)
 
@@ -474,14 +497,23 @@ class _UserInput(object):
 
             if len(self.matching_keyword_list[-1]) is 1:
                 # Only one match, dig deeper in the keyword tree
-                self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_keyword_list[-1][0]))
+                if self.matching_keyword_list[-1][0] in possible_static_keywords:
+                    self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_keyword_list[-1][0]))
+
+                elif self.matching_keyword_list[-1][0] in self.dyn_keywords[-1]:
+                    print self.matching_keyword_list[-1][0]
+                    break
 
             elif len(self.matching_keyword_list[-1]) is 0:
                 self.status = 'no_label_match'
                 break
 
             elif len(self.matching_keyword_list[-1]) > 1:
-                self.status = 'label_conflict'
+                if self.matching_keyword_type_list[-1] is 'static':
+                    self.status = 'label_conflict'
+                else:
+                    self.status = 'dynamic_keyword_conflict'
+
                 break
 
             else:

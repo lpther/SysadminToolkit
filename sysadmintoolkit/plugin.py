@@ -97,7 +97,12 @@ class Plugin(object):
         self.logger.debug('Plugin %s added dynamic keyword "%s" to modes %s' % (self.get_name(), dyn_keyword, modes))
 
     def get_commands(self, mode):
-        '''Returns the list of commands for the requested mode
+        '''
+        Returns the list of commands for the requested mode.
+
+        This is called by a newly created command prompt to populate it's available
+        labels.
+
         '''
         if mode not in self.label_map:
             return []
@@ -111,14 +116,30 @@ class Plugin(object):
 
         return command_list
 
-    def get_dyn_keyword_list(self, dyn_keyword, mode):
+    def get_dyn_keyword_map(self, dyn_keyword, mode):
+        '''
+        Returns map of dyn_keyword possibilities/shorthelp by querying
+        registered dyn_keyword functions, for the provided mode.
+
+        Returns:
+        {} if no matching registered keywords
+        {'possibility1': 'shorthelp for possibility1',
+         'possibility2': 'shorthelp for possibility2',
+         }
+
+        This is called by a newly created command prompt to populate it's available
+        labels.
+
+        '''
+        self.logger.debug('Dynamic keyword map request for %(dyn_keyword)s in mode %(mode)s' % locals())
+
         if mode not in self.dyn_keyword_map:
             mode = ''
 
         if dyn_keyword in self.dyn_keyword_map[mode]:
-            return self.dyn_keyword_map[mode][dyn_keyword]()
+            return self.dyn_keyword_map[mode][dyn_keyword](dyn_keyword)
         else:
-            return []
+            return {}
 
     def enter_mode(self, cmdprompt):
         '''

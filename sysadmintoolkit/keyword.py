@@ -127,7 +127,7 @@ class _Keyword(object):
 
                         possibilities[possibility] = {'pluginname': sub_keyword_plugin_key, \
                                                       'shorthelp': shorthelp, \
-                                                       'dyn_keyword_label': sub_keyword_key, \
+                                                      'dyn_keyword_label': sub_keyword_key, \
                                                        }
 
         return possibilities

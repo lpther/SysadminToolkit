@@ -71,7 +71,7 @@ Later:
 Out of scope:
 	Code plugins that leverage the toolkit for advanced features (why this project started in the first place)
 		clustering (symmetric and group based)
-		lvs/keepalive
+		lvs/keepalived
 		fibre channel toolkit
 		infiniband toolkit
 	

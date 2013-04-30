@@ -151,12 +151,14 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         print
 
     def get_plugins_for_use_cmd(self, dyn_keyword):
-        plugins = self.cmdstack[-1].get_plugins().keys()
+        plugins = self.cmdstack[-1].get_plugins()
 
         map_dyn_keyword = {}
 
         for plugin in plugins:
-            map_dyn_keyword[plugin] = 'Restrict the scope to %s' % plugin
+            map_dyn_keyword[plugin.get_name()] = 'Restrict the scope to %s plugin' % plugin.get_name()
+
+        return map_dyn_keyword
 
     def cmd_input_with_scope(self, line, mode):
         print 'cmd input with scope not implemented yet !!'

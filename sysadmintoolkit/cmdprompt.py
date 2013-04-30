@@ -179,17 +179,17 @@ class CmdPrompt(cmd.Cmd):
             keys = executable_commands.keys()
             keys.sort()
 
+            last_return_code = 401
+
             for keycmd in keys:
                 if len(keys) > 1:
                     print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
 
                 try:
-                    return_code = executable_commands[keycmd].get_function()(line, self.mode)
+                    last_return_code = executable_commands[keycmd].get_function()(line, self.mode)
 
-                    if not self.is_interactive:
-                        return return_code
-                    else:
-                        return
+                    if last_return_code is None:
+                        last_return_code = 0
 
                 except Exception as e:
                     print user_input.matching_keyword_list
@@ -203,6 +203,20 @@ class CmdPrompt(cmd.Cmd):
                         return 401
                     else:
                         return
+                try:
+                    if last_return_code is None:
+                        last_return_code = 0
+                    else:
+                        last_return_code = int(last_return_code)
+                except:
+                    self.logger.warning('Plugin %s, label "%s" returned an invalid value' % \
+                                        (' '.join([user_input.matching_keyword_list[i][0] for i in range(len(user_input.matching_keyword_list))]), \
+                                         executable_commands[keycmd].get_plugin().get_name()))
+
+            if not self.is_interactive:
+                return last_return_code
+            else:
+                return
 
         elif user_input.status is 'command_conflict':
             # One or more commands are executable, but they do not allow conflict
@@ -229,7 +243,7 @@ class CmdPrompt(cmd.Cmd):
                 self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found for plugin %s !' % plugin_scope)
 
             if not self.is_interactive:
-                return 402
+                return 410
             else:
                 return
 
@@ -242,7 +256,7 @@ class CmdPrompt(cmd.Cmd):
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
 
             if not self.is_interactive:
-                return 402
+                return 411
             else:
                 return
 
@@ -259,7 +273,7 @@ class CmdPrompt(cmd.Cmd):
             self.print_conflict_keywords(user_input)
 
             if not self.is_interactive:
-                return 403
+                return 404
             else:
                 return
 
@@ -478,7 +492,7 @@ class _UserInput(object):
                     if self.scope is None or self.scope == plugin:
                         executable_commands += [self.keyword_list[-1].get_executable_commands()[plugin]]
 
-                        if self.keyword_list[-1].get_executable_commands()[plugin].is_conflict_allowed():
+                        if not executable_commands[-1].is_conflict_allowed():
                             conflicting_commands += 1
 
                 if (conflicting_commands is 0 and len(executable_commands) >= 1) or \

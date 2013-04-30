@@ -29,8 +29,10 @@ class CommandPromptError(SysadminToolkitError):
                         300: 'Error', \
                         400: 'Warning', \
                         401: 'Plugin command returned exception', \
-                        402: 'Command or label had no match in registered commands', \
-                        403: 'Label or command conflict detected'
+                        403: 'Command conflict detected', \
+                        404: 'Label conflict detected', \
+                        410: 'No executable command found at this label', \
+                        411: 'Label had no match in registered commands', \
                         }
 
 

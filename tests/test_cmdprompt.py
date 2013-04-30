@@ -18,8 +18,6 @@ class CmdPromptTestCase(unittest.TestCase):
 
         self.basicplugin = dummyplugin.DummyPlugin('dummyplugin')
 
-        self.badplugin = dummyplugin.BadPlugin('badplugin')
-
     def test_bad_instantiation_types(self):
         self.assertRaises(sysadmintoolkit.exception.CommandPromptError, sysadmintoolkit.cmdprompt.CmdPrompt, None)
         self.assertRaises(sysadmintoolkit.exception.CommandPromptError, sysadmintoolkit.cmdprompt.CmdPrompt, None, mode=None)
@@ -41,20 +39,80 @@ class CmdPromptTestCase(unittest.TestCase):
         pass
 
     def test_execute_commands_with_errors(self):
+        badplugin = dummyplugin.BadPlugin('badplugin')
+
         cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
-        cmd.add_plugin(self.badplugin)
+        cmd.add_plugin(badplugin)
 
         cmd.preloop()
 
         try:
             sys.stdout = self.devnull
             self.assertEqual(cmd.onecmd('execute bad_function_1'), 401)
-            self.assertEqual(self.badplugin.last_state, 'init')
+            self.assertEqual(badplugin.last_state, 'init')
 
             self.assertEqual(cmd.onecmd('execute bad_function_2'), 401)
-            self.assertEqual(self.badplugin.last_state, 'init')
+            self.assertEqual(badplugin.last_state, 'init')
 
             self.assertEqual(cmd.onecmd('execute bad_function_3'), 401)
-            self.assertEqual(self.badplugin.last_state, 'init')
+            self.assertEqual(badplugin.last_state, 'init')
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_static_commands(self):
+        behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
+        behavedplugin2 = dummyplugin.BehavedPlugin('behavedplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('unique behavedplugin1 command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('    unique      behavedplugin1     command     with       spaces    '), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('conflicting command'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('non conflicting command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behavedplugin2 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_non_exec_commands(self):
+        behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
+        behavedplugin2 = dummyplugin.BehavedPlugin('behavedplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+
+            self.assertEqual(cmd.onecmd('non existing command'), 411)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            # Test a registered label with no executable commands
+            self.assertEqual(cmd.onecmd('unique'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
         finally:
             sys.stdout = self.original_stdout

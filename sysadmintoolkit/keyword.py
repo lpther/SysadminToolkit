@@ -102,22 +102,35 @@ class _Keyword(object):
 
         return keywords_dict
 
-    def get_sub_keywords_dyn_keywords(self, mode):
+    def get_sub_keyword_dyn_keyword_possibilities(self, mode):
         '''
-        Returns a map of all sub_keywords that are dynamic, mapped to a list
-        of plugins registered to this sub_keyword
+        Returns sub keywords's possible dynamic keywords (resolved),
+        mapped to the dynamic keyword and related plugins
 
-        {'<dyn_keyword>':[plugins], etc...}
         '''
-        sub_keywords_keys = self.get_sub_keywords_keys()
+        possibilities = {}
 
-        sub_dyn_keywords = {}
+        for sub_keyword_key in self.get_sub_keywords_keys():
 
-        for keyword in sub_keywords_keys:
-            if sysadmintoolkit.cmdprompt.CmdPrompt.is_dynamic_keyword(keyword):
-                sub_dyn_keywords[keyword] = self.get_sub_keyword[keyword].get_plugins()
+            if sysadmintoolkit.cmdprompt.CmdPrompt.is_dynamic_keyword(sub_keyword_key):
 
-        return sub_dyn_keywords
+                for sub_keyword_plugin_key in self.get_sub_keyword(sub_keyword_key).get_plugins():
+
+                    sub_keyword_dyn_keyword_map = self.get_sub_keyword(sub_keyword_key).plugins[sub_keyword_plugin_key].get_dyn_keyword_map(sub_keyword_key, mode)
+
+                    for possibility in sub_keyword_dyn_keyword_map:
+
+                        shorthelp = sub_keyword_dyn_keyword_map[possibility]
+
+                        if possibility not in possibilities:
+                            possibilities[possibility] = { }
+
+                        possibilities[possibility] = {'pluginname': sub_keyword_plugin_key, \
+                                                      'shorthelp': shorthelp, \
+                                                       'dyn_keyword_label': sub_keyword_key, \
+                                                       }
+
+        return possibilities
 
     def get_depth(self):
         '''

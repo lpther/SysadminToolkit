@@ -169,7 +169,12 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
         self.logger.debug("  plugin_scope='%s'" % (plugin_scope))
 
-        statusdict = self.get_line_status(line, plugin_scope)
+#        statusdict = self.get_line_status(line, plugin_scope)
+        statusdict = {}
+
+        user_input = _UserInput(line, self, plugin_scope)
+        print user_input
+        return
 
         if statusdict['status'] is 'exec_commands':
             # The command matches to a label in the keyword tree
@@ -286,101 +291,6 @@ class CmdPrompt(cmd.Cmd):
 
         return statusdict
 
-    def get_line_status(self, line, plugin_scope=None):
-        '''
-        Analyze the user input and return the status
-
-        pluginscope        str        Restrict matches to this module
-        '''
-        self.logger.debug('Line analysis started for line "%s" in mode %s (scope is %s)' % (line, self.mode, plugin_scope))
-        pp = pprint.PrettyPrinter(indent=2)
-
-        statusdict = {'expanded_label': '',
-                      'plugin_scope': plugin_scope,
-                      'matching_dyn_keyword': {}}
-
-        keyword_tree = self.command_tree
-        rest_of_line = line
-        keyword_pos = 1
-
-        while True:
-            [this_keyword, rest_of_line] = self.split_label(rest_of_line, first_keyword_only=True)
-
-            possible_keywords = keyword_tree.get_sub_keywords_keys()
-
-            matching_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_keywords)
-
-            # matching_dyn_keywords = self.get_matching_dyn_prefix(this_keyword, keyword_tree)
-
-            self.logger.debug('-' * 50)
-            self.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, rest_of_line))
-            self.logger.debug('possible_keywords=%s' % possible_keywords)
-            self.logger.debug('matching_keywords="%s"' % matching_keywords)
-
-            statusdict['keyword'] = this_keyword
-            statusdict['keyword_tree'] = keyword_tree
-            statusdict['keyword_pos'] = keyword_pos
-            statusdict['matching_keywords'] = matching_keywords
-            statusdict['rest_of_line'] = rest_of_line
-            statusdict['commands'] = []
-
-            if this_keyword is '':
-                # End of user input for this label
-                statusdict['keyword_pos'] = keyword_pos - 1
-
-                execplugins = keyword_tree.get_executable_commands().keys()
-                execplugins.sort()
-
-                conflicting_commands = 0
-                executable_commands = []
-
-                for plugin in execplugins:
-                    if plugin_scope is None or plugin_scope == plugin:
-                        executable_commands += [keyword_tree.get_executable_commands()[plugin]]
-
-                        if keyword_tree.get_executable_commands()[plugin].is_conflict_allowed():
-                            conflicting_commands += 1
-
-                if (conflicting_commands is 0 and len(executable_commands) >= 1) or \
-                    (conflicting_commands is 1 and len(executable_commands) is 1):
-
-                    statusdict['status'] = 'exec_commands'
-                    statusdict['commands'] = executable_commands
-
-                elif conflicting_commands > 1:
-                    statusdict['status'] = 'command_conflict'
-                    statusdict['commands'] = executable_commands
-
-                else:
-                    statusdict['status'] = 'no_command_match'
-                    statusdict['commands'] = executable_commands
-
-                break
-
-            if len(matching_keywords) is 1:
-                # Only one match, dig deeper in the keyword tree
-                keyword_tree = keyword_tree.get_sub_keyword(matching_keywords[0])
-                statusdict['expanded_label'] = self.merge_keywords([statusdict['expanded_label']] + [matching_keywords[0]])
-                keyword_pos += 1
-
-            elif len(matching_keywords) is 0:
-                statusdict['status'] = 'no_label_match'
-                break
-
-            elif len(matching_keywords) > 1:
-                statusdict['status'] = 'label_conflict'
-                break
-
-            else:
-                statusdict['status'] = ('ERROR: Command analysis failed with user input "%s" in mode %s' % (line, self.mode))
-                break
-
-        self.logger.debug('-' * 50)
-        self.logger.debug('Line analysis ended for line "%s" in mode %s' % (line, self.mode))
-        self.logger.debug('Analysis is: \n' + pp.pformat(statusdict))
-
-        return statusdict
-
     def print_cli_error(self, pos, errmsg):
         '''
         '''
@@ -464,3 +374,120 @@ class CmdPrompt(cmd.Cmd):
         self.height = height
 
         self.logger.debug('Updating window size width x height : %s x %s' % (width, height))
+
+
+class _UserInput(object):
+    '''
+    '''
+    def __init__(self, rawcmd, cmdprompt, scope=None):
+        self.rawcmd = rawcmd
+        self.cmdprompt = cmdprompt
+        self.scope = scope
+        self.status = 'not_analyzed'
+
+        # Rest of rawcmd that was not yet analyzed
+        self.rest_of_line = rawcmd
+
+        # Each expanded input keywords as entered
+        self.input_keyword_list = []
+
+        # Matching keywords for all levels
+        self.matching_keyword_list = []
+
+        # List of _Keyword for all positions
+        self.keyword_list = [self.cmdprompt.command_tree]
+
+        # Map of position:dyn_keywords
+        self.dyn_keywords = {}
+
+        # List of commands to execute
+        self.executable_commands = []
+
+        self.analyze_cmd()
+
+    def __str__(self):
+        pp = pprint.PrettyPrinter(indent=2)
+
+        outstr = []
+
+        outstr.append('rawcmd="%s" scope=%s' % (self.rawcmd, self.scope))
+        outstr.append('input_keyword_list=%s' % pp.pformat(self.input_keyword_list))
+        outstr.append('matching_keyword_list=%s' % pp.pformat(self.matching_keyword_list))
+        outstr.append('dyn_keywords=%s' % pp.pformat(self.dyn_keywords))
+        outstr.append('rest_of_line="%s"' % self.rest_of_line)
+        outstr.append('status=%s' % self.status)
+
+        return '  ' + '\n  '.join(outstr)
+
+    def analyze_cmd(self):
+        self.cmdprompt.logger.debug('Line analysis started for line "%s" in mode %s (scope is %s)' % \
+                                     (self.rawcmd, self.cmdprompt.mode, self.scope))
+
+        while True:
+            [this_keyword, self.rest_of_line] = CmdPrompt.split_label(self.rest_of_line, first_keyword_only=True)
+
+            possible_keywords = self.keyword_list[-1].get_sub_keywords_keys()
+
+            self.matching_keyword_list.append(sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_keywords))
+
+            self.cmdprompt.logger.debug('-' * 50)
+            self.cmdprompt.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, self.rest_of_line))
+            self.cmdprompt.logger.debug('possible_keywords=%s' % possible_keywords)
+            self.cmdprompt.logger.debug('matching_keywords="%s"' % self.matching_keyword_list[-1])
+
+            self.input_keyword_list.append(this_keyword)
+
+            if this_keyword is '':
+                # End of user input for this label
+
+                self.input_keyword_list = self.input_keyword_list[:-1]
+                self.matching_keyword_list = self.matching_keyword_list[:-1]
+
+                execplugins = self.keyword_list[-1].get_executable_commands().keys()
+                execplugins.sort()
+
+                conflicting_commands = 0
+                executable_commands = []
+
+                for plugin in execplugins:
+                    if self.scope is None or self.scope == plugin:
+                        executable_commands += [self.keyword_list[-1].get_executable_commands()[plugin]]
+
+                        if self.keyword_list[-1].get_executable_commands()[plugin].is_conflict_allowed():
+                            conflicting_commands += 1
+
+                if (conflicting_commands is 0 and len(executable_commands) >= 1) or \
+                    (conflicting_commands is 1 and len(executable_commands) is 1):
+
+                    self.status = 'exec_commands'
+                    self.executable_commands = executable_commands
+
+                elif conflicting_commands > 1:
+                    self.status = 'command_conflict'
+                    self.executable_commands = executable_commands
+
+                else:
+                    self.status = 'no_command_match'
+                    self.executable_commands = executable_commands
+
+                break
+
+            if len(self.matching_keyword_list[-1]) is 1:
+                # Only one match, dig deeper in the keyword tree
+                self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_keyword_list[-1][0]))
+
+            elif len(self.matching_keyword_list[-1]) is 0:
+                self.status = 'no_label_match'
+                break
+
+            elif len(self.matching_keyword_list[-1]) > 1:
+                self.status = 'label_conflict'
+                break
+
+            else:
+                self.status = 'ERROR: Command analysis failed with user input "%s" in mode %s' % (self.rawcmd, self.mode)
+                break
+
+        self.cmdprompt.logger.debug('-' * 50)
+        self.cmdprompt.logger.debug('Line analysis ended for line "%s" in mode %s' % (self.rawcmd, self.cmdprompt.mode))
+        self.cmdprompt.logger.debug('Analysis is: \n%s' % self)

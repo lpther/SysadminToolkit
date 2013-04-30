@@ -21,8 +21,8 @@ class BadPlugin(DummyPlugin):
         super(BadPlugin, self).__init__(name)
 
         self.add_command(command.ExecCommand('execute bad_function_1', self, self.bad_function_1, ''))
-        self.add_command(command.ExecCommand('execute bad_function_2', self, self.bad_function_1, ''))
-        self.add_command(command.ExecCommand('execute bad_function_3', self, self.bad_function_1, ''))
+        self.add_command(command.ExecCommand('execute bad_function_2', self, self.bad_function_2, ''))
+        self.add_command(command.ExecCommand('execute bad_function_3', self, self.bad_function_3, ''))
 
     def bad_function_1(self):
         '''Not enough arguments'''
@@ -34,5 +34,5 @@ class BadPlugin(DummyPlugin):
 
     def bad_function_3(self, line, mode):
         '''Raises some exception'''
-        self.last_state = 'entered bad function 3, should not be here!'
+        print 'Entered bad function 3 !'
         return 1 / 0

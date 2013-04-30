@@ -192,8 +192,10 @@ class CmdPrompt(cmd.Cmd):
                         return
 
                 except Exception as e:
+                    print user_input.matching_keyword_list
                     self.logger.error('Error executing label %s with plugin %s in mode %s:\n%s' % \
-                                 (' '.join(user_input.matching_keyword_list), executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
+                                 (' '.join([user_input.matching_keyword_list[i][0] for i in range(len(user_input.matching_keyword_list))]), \
+                                  executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
 
                     print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
 
@@ -425,16 +427,16 @@ class _UserInput(object):
         while True:
             [this_keyword, self.rest_of_line] = CmdPrompt.split_label(self.rest_of_line, first_keyword_only=True)
 
+            # Get all possibilities from static and dynamic keywords
+
             possible_static_keywords = self.keyword_list[-1].get_sub_keywords_keys()
 
             self.dyn_keywords.append(self.keyword_list[-1].get_sub_keyword_dyn_keyword_possibilities(self.cmdprompt.mode))
 
-            print self.dyn_keywords[-1]
-
             matching_static_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, possible_static_keywords)
             matching_dynamic_keywords = sysadmintoolkit.utils.get_matching_prefix(this_keyword, self.dyn_keywords[-1].keys())
 
-            # Prioritize static keywords over dynamic
+            # Prioritize matchign of static keywords over dynamic
             match_type = 'no_match'
 
             if len(matching_static_keywords) > 0:

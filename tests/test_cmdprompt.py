@@ -93,6 +93,44 @@ class CmdPromptTestCase(unittest.TestCase):
         finally:
             sys.stdout = self.original_stdout
 
+    def test_execute_static_commands_with_autocompletion(self):
+        behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
+        behavedplugin2 = dummyplugin.BehavedPlugin('behavedplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('uniq behavedplugin1 c'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('    uniq      behavedplugin1     command     w       spaces    '), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('co c'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('uni command'), 404)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('n conflict command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behavedplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behavedplugin2 behaved function 1')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+        finally:
+            sys.stdout = self.original_stdout
+
     def test_execute_non_exec_commands(self):
         behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
         behavedplugin2 = dummyplugin.BehavedPlugin('behavedplugin2')
@@ -114,5 +152,184 @@ class CmdPromptTestCase(unittest.TestCase):
             self.assertEqual(cmd.onecmd('unique'), 410)
             self.assertEqual(behavedplugin1.last_state, 'init')
             self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('this is just a help label'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_non_exec_commands_with_autocompletion(self):
+        behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
+        behavedplugin2 = dummyplugin.BehavedPlugin('behavedplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+
+            self.assertEqual(cmd.onecmd('non ex co'), 411)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            # Test a registered label with no executable commands
+            self.assertEqual(cmd.onecmd('uniq'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('th i j a he labe'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_dynamic_commands(self):
+        behavedplugin1 = dummyplugin.BehavedDynamicPlugin('behaveddynamicplugin1')
+        behavedplugin2 = dummyplugin.BehavedDynamicPlugin('behaveddynamicplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('unique behaveddynamicplugin1 apple command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'unique behaveddynamicplugin1 apple command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('unique behaveddynamicplugin1 apple command apricot'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'unique behaveddynamicplugin1 apple command apricot')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('conflicting apple command'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('conflicting apple command apricot'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('non conflicting apple command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'non conflicting apple command')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting apple command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('non conflicting apple command apricot'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'non conflicting apple command apricot')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting apple command apricot')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            # Test a registered dynamic label with no executable commands
+            self.assertEqual(cmd.onecmd('non conflicting apple'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_dynamic_commands_with_autocompletion(self):
+        behavedplugin1 = dummyplugin.BehavedDynamicPlugin('behaveddynamicplugin1')
+        behavedplugin2 = dummyplugin.BehavedDynamicPlugin('behaveddynamicplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            sys.stdout = self.devnull
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('uniq behaveddynamicplugin1 app comm'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'unique behaveddynamicplugin1 apple command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('uniq behaveddynamicplugin1 appl command apr'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'unique behaveddynamicplugin1 apple command apricot')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('conflicting app command'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('conflicting app command apricot'), 403)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('non conflicting app command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'non conflicting apple command')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting apple command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('non conflicting app command apricot'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'non conflicting apple command apricot')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting apple command apricot')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            # Test a registered dynamic label with no executable commands
+            self.assertEqual(cmd.onecmd('non conflicting app'), 410)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+        finally:
+            sys.stdout = self.original_stdout
+
+    def test_execute_dynamic_commands_different_dyn_keyword_types(self):
+        behavedplugin1 = dummyplugin.BehavedDynamicPlugin('behaveddynamicplugin1')
+        behavedplugin2 = dummyplugin.BehavedDynamicPlugin_2('behaveddynamicplugin2')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+        cmd.add_plugin(behavedplugin2)
+
+        cmd.preloop()
+
+        try:
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('uni command'), 404)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+
+            self.assertEqual(cmd.onecmd('non conflicting potato command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting potato command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('non conflicting banana command'), 12345)
+            self.assertEqual(behavedplugin1.last_state, 'plugin behaveddynamicplugin1 behaved function 1')
+            self.assertEqual(behavedplugin2.last_state, 'plugin behaveddynamicplugin2 behaved function 1')
+            self.assertEqual(behavedplugin1.dyn_command_line, 'non conflicting banana command')
+            self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting banana command')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
+            self.assertEqual(cmd.onecmd('non conflicting p command'), 404)
+            self.assertEqual(behavedplugin1.last_state, 'init')
+            self.assertEqual(behavedplugin2.last_state, 'init')
+            self.assertEqual(cmd.onecmd('reset'), 0)
+
         finally:
             sys.stdout = self.original_stdout

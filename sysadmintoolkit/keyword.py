@@ -125,10 +125,13 @@ class _Keyword(object):
                         if possibility not in possibilities:
                             possibilities[possibility] = { }
 
-                        possibilities[possibility] = {'pluginname': sub_keyword_plugin_key, \
-                                                      'shorthelp': shorthelp, \
-                                                      'dyn_keyword_label': sub_keyword_key, \
-                                                       }
+                        if sub_keyword_plugin_key not in possibilities[possibility]:
+                            possibilities[possibility][sub_keyword_plugin_key] = {}
+
+                        possibilities[possibility][sub_keyword_plugin_key] = {'pluginname': sub_keyword_plugin_key, \
+                                                                              'shorthelp': shorthelp, \
+                                                                              'dyn_keyword_label': sub_keyword_key, \
+                                                                              }
 
         return possibilities
 

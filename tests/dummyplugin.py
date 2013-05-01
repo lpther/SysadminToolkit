@@ -45,12 +45,84 @@ class BehavedPlugin(DummyPlugin):
         self.add_command(command.ExecCommand('conflicting command', self, self.behaved_function_1))
         self.add_command(command.ExecCommand('non conflicting command', self, self.behaved_function_1, allow_conflict=True))
         self.add_command(command.ExecCommand('unique %s command' % self.name, self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('universal %s command' % self.name, self, self.behaved_function_1))
         self.add_command(command.ExecCommand('unique %s command    with spaces' % self.name, self, self.behaved_function_1))
         self.add_command(command.ExecCommand('reset', self, self.reset_state, allow_conflict=True))
+
+        self.add_command(command.LabelHelp('this is just a help label', self, 'This label cannot be executed'))
 
     def behaved_function_1(self, line, mode):
         self.last_state = 'plugin %s behaved function 1' % self.name
         return 12345
+
+    def reset_state(self, line, mode):
+        self.last_state = 'init'
+
+
+class BehavedDynamicPlugin(DummyPlugin):
+    def __init__(self, name):
+        super(BehavedDynamicPlugin, self).__init__(name)
+
+        self.add_command(command.ExecCommand('unique %s <fruit> command' % self.name, self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('unique %s <fruit> command <fruit>' % self.name, self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('universal %s command' % self.name, self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('conflicting <fruit> command', self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('conflicting <fruit> command <fruit>', self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('non conflicting <fruit> command', self, self.behaved_function_1, allow_conflict=True))
+        self.add_command(command.ExecCommand('non conflicting <fruit> command <fruit>', self, self.behaved_function_1, allow_conflict=True))
+        self.add_command(command.ExecCommand('reset', self, self.reset_state, allow_conflict=True))
+
+        self.add_dynamic_keyword_fn('<fruit>', self.resolve_dynamic_keyword)
+
+        self.dyn_command_line = ''
+
+    def behaved_function_1(self, line, mode):
+        self.last_state = 'plugin %s behaved function 1' % self.name
+        self.dyn_command_line = line
+        return 12345
+
+    def resolve_dynamic_keyword(self, dyn_keyword):
+        return {'apple': 'This is a green or red fruit', \
+                'banana': 'This is a yellow fruit', \
+                'apricot': 'This is an orange fruit', \
+                'pineapple': 'This is an orange and yellow fruit', \
+                }
+
+    def reset_state(self, line, mode):
+        self.last_state = 'init'
+
+
+class BehavedDynamicPlugin_2(DummyPlugin):
+    def __init__(self, name):
+        super(BehavedDynamicPlugin_2, self).__init__(name)
+
+        self.add_command(command.ExecCommand('non conflicting <fruit> command', self, self.behaved_function_1, allow_conflict=True))
+        self.add_command(command.ExecCommand('conflicting <fruit> command', self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('non conflicting <vegetable> command', self, self.behaved_function_1, allow_conflict=True))
+        self.add_command(command.ExecCommand('conflicting <vegetable> command', self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('universal %s command' % self.name, self, self.behaved_function_1))
+
+        self.add_command(command.ExecCommand('reset', self, self.reset_state, allow_conflict=True))
+
+        self.add_dynamic_keyword_fn('<fruit>', self.resolve_dynamic_keyword)
+        self.add_dynamic_keyword_fn('<vegetable>', self.resolve_dynamic_keyword_2)
+
+        self.dyn_command_line = ''
+
+    def behaved_function_1(self, line, mode):
+        self.last_state = 'plugin %s behaved function 1' % self.name
+        self.dyn_command_line = line
+        return 12345
+
+    def resolve_dynamic_keyword(self, dyn_keyword):
+        return {'orange': 'This is a orange fruit', \
+                'banana': 'This is a yellow fruit', \
+                }
+
+    def resolve_dynamic_keyword_2(self, dyn_keyword):
+        return {'potato': 'This is an brownish vegetable', \
+                'carrot': 'This is an orange vegetable', \
+                }
 
     def reset_state(self, line, mode):
         self.last_state = 'init'

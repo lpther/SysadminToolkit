@@ -27,10 +27,12 @@ class CommandPromptError(SysadminToolkitError):
                         200: 'Critical', \
                         201: 'Could not instantiate plugin', \
                         300: 'Error', \
+                        301: 'This is an unknown error in user input analysis', \
                         400: 'Warning', \
                         401: 'Plugin command returned exception', \
                         403: 'Command conflict detected', \
                         404: 'Label conflict detected', \
+                        405: 'Dynamic keyword conflict', \
                         410: 'No executable command found at this label', \
                         411: 'Label had no match in registered commands', \
                         }

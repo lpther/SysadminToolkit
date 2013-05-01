@@ -176,6 +176,14 @@ class CmdPrompt(cmd.Cmd):
             # Action: Execute the command (if allowed by the commands)
             executable_commands = user_input.keyword_list[-1].get_executable_commands()
 
+            # Build up the line to pass to the plugin
+            keywords_for_plugin = []
+            for index in range(len(user_input.matching_static_keyword_list)):
+                if not self.is_dynamic_keyword(user_input.matching_static_keyword_list[index][0]):
+                    keywords_for_plugin.append(user_input.matching_static_keyword_list[index][0])
+                else:
+                    keywords_for_plugin.append(user_input.matching_dyn_keyword_list[index][0])
+
             keys = executable_commands.keys()
             keys.sort()
 
@@ -186,15 +194,14 @@ class CmdPrompt(cmd.Cmd):
                     print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
 
                 try:
-                    last_return_code = executable_commands[keycmd].get_function()(line, self.mode)
+                    last_return_code = executable_commands[keycmd].get_function()(self.merge_keywords(keywords_for_plugin), self.mode)
 
                     if last_return_code is None:
                         last_return_code = 0
 
                 except Exception as e:
-                    print user_input.matching_keyword_list
                     self.logger.error('Error executing label %s with plugin %s in mode %s:\n%s' % \
-                                 (' '.join([user_input.matching_keyword_list[i][0] for i in range(len(user_input.matching_keyword_list))]), \
+                                 (' '.join([user_input.matching_static_keyword_list[i][0] for i in range(len(user_input.matching_static_keyword_list))]), \
                                   executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
 
                     print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
@@ -210,7 +217,7 @@ class CmdPrompt(cmd.Cmd):
                         last_return_code = int(last_return_code)
                 except:
                     self.logger.warning('Plugin %s, label "%s" returned an invalid value' % \
-                                        (' '.join([user_input.matching_keyword_list[i][0] for i in range(len(user_input.matching_keyword_list))]), \
+                                        (' '.join([user_input.matching_static_keyword_list[i][0] for i in range(len(user_input.matching_static_keyword_list))]), \
                                          executable_commands[keycmd].get_plugin().get_name()))
 
             if not self.is_interactive:
@@ -224,7 +231,7 @@ class CmdPrompt(cmd.Cmd):
             ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
             leading_whitespaces = len(line) - len(line.lstrip())
 
-            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specigy plugin !')
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specify plugin !')
 
             if not self.is_interactive:
                 return 403
@@ -277,7 +284,25 @@ class CmdPrompt(cmd.Cmd):
             else:
                 return
 
-        return
+        elif user_input.status is 'dynamic_keyword_conflict':
+            # There is more than one match, in more than one dynamic keyword type
+            # Action: Display conflicting dynamix keywords and their related plugins
+            self.print_conflict_keywords(user_input)
+
+            if not self.is_interactive:
+                return 404
+            else:
+                return
+
+        else:
+            # We should never get here, warning message and dabug if available
+            self.logger.warn('Command prompt was unable to parse line %s' % line)
+            self.logger.debug('UserInput analysis:\n%s' % str(user_input))
+
+            if not self.is_interactive:
+                return 301
+            else:
+                return
 
     def complete_default(self, text, line, begidx, endidx):
         '''
@@ -312,15 +337,15 @@ class CmdPrompt(cmd.Cmd):
 
         print prefix + errmsg
 
-    def print_conflict_keywords(self, statusdict):
+    def print_conflict_keywords(self, user_input):
         '''
         '''
         sep = 30
         print
         print '  %s %s' % ('Keyword'.ljust(sep), 'Plugins')
         print '  %s %s' % ('======='.ljust(sep), '=======')
-        for matching_keyword in statusdict['matching_keywords']:
-            print '  %s %s' % (matching_keyword.ljust(sep), ','.join(statusdict['keyword_tree'].get_plugins()))
+        for matching_keyword in user_input.matching_static_keyword_list[-1]:
+            print '  %s %s' % (matching_keyword.ljust(sep), ', '.join(user_input.keyword_list[-1].get_sub_keyword(matching_keyword).get_plugins()))
 
         print
 
@@ -402,8 +427,11 @@ class _UserInput(object):
         # Each expanded input keywords as entered
         self.input_keyword_list = []
 
-        # Matching keywords for all levels
-        self.matching_keyword_list = []
+        # Matching keywords for all levels (with unresolved dynamic keywords)
+        self.matching_static_keyword_list = []
+
+        # List of {dyn_keywords:{plugin:shorthelp}}
+        self.matching_dyn_keyword_list = []
 
         # Match type for all keywords
         self.matching_keyword_type_list = []
@@ -426,7 +454,8 @@ class _UserInput(object):
 
         outstr.append('rawcmd="%s" scope=%s' % (self.rawcmd, self.scope))
         outstr.append('input_keyword_list=%s' % pp.pformat(self.input_keyword_list))
-        outstr.append('matching_keyword_list=%s' % pp.pformat(self.matching_keyword_list))
+        outstr.append('matching_static_keyword_list=%s' % pp.pformat(self.matching_static_keyword_list))
+        outstr.append('matching_dyn_keyword_list=%s' % pp.pformat(self.matching_dyn_keyword_list))
         outstr.append('dyn_keywords=%s' % pp.pformat(self.dyn_keywords))
         outstr.append('match_types=%s' % pp.pformat(self.matching_keyword_type_list))
         outstr.append('rest_of_line="%s"' % self.rest_of_line)
@@ -454,23 +483,27 @@ class _UserInput(object):
             match_type = 'no_match'
 
             if len(matching_static_keywords) > 0:
-                self.matching_keyword_list.append(matching_static_keywords)
+                self.matching_static_keyword_list.append(matching_static_keywords)
                 match_type = 'static'
             else:
                 matching_dyn_keyword_labels = []
 
                 for dyn_keyword in matching_dynamic_keywords:
-                    matching_dyn_keyword_labels.append(self.dyn_keywords[-1][dyn_keyword]['dyn_keyword_label'])
-                    match_type = 'dynamic'
+                    # Iterate over plugins!!!
+                    for plugin in self.dyn_keywords[-1][dyn_keyword]:
+                        if self.dyn_keywords[-1][dyn_keyword][plugin]['dyn_keyword_label'] not in matching_dyn_keyword_labels:
+                            matching_dyn_keyword_labels.append(self.dyn_keywords[-1][dyn_keyword][plugin]['dyn_keyword_label'])
+                        match_type = 'dynamic'
 
-                self.matching_keyword_list.append(matching_dyn_keyword_labels)
+                self.matching_static_keyword_list.append(matching_dyn_keyword_labels)
 
             self.matching_keyword_type_list.append(match_type)
+            self.matching_dyn_keyword_list.append(matching_dynamic_keywords)
 
             self.cmdprompt.logger.debug('-' * 50)
             self.cmdprompt.logger.debug('this_keyword="%s" rest_of_line="%s"' % (this_keyword, self.rest_of_line))
             self.cmdprompt.logger.debug('possible_keywords=%s' % possible_static_keywords)
-            self.cmdprompt.logger.debug('matching_keywords="%s"' % self.matching_keyword_list[-1])
+            self.cmdprompt.logger.debug('matching_keywords="%s"' % self.matching_static_keyword_list[-1])
             self.cmdprompt.logger.debug('matching_static=%s' % matching_static_keywords)
             self.cmdprompt.logger.debug('matching_dynamic=%s' % matching_dynamic_keywords)
 
@@ -479,8 +512,12 @@ class _UserInput(object):
             if this_keyword is '':
                 # End of user input for this label
 
-                self.input_keyword_list = self.input_keyword_list[:-1]
-                self.matching_keyword_list = self.matching_keyword_list[:-1]
+                # Remove last match from most accumulated lists
+                self.input_keyword_list.pop()
+                self.matching_static_keyword_list.pop()
+                self.matching_keyword_type_list.pop()
+                self.dyn_keywords.pop()
+                self.matching_dyn_keyword_list.pop()
 
                 execplugins = self.keyword_list[-1].get_executable_commands().keys()
                 execplugins.sort()
@@ -511,20 +548,20 @@ class _UserInput(object):
 
                 break
 
-            if len(self.matching_keyword_list[-1]) is 1:
+            if len(self.matching_static_keyword_list[-1]) is 1:
                 # Only one match, dig deeper in the keyword tree
-                if self.matching_keyword_list[-1][0] in possible_static_keywords:
-                    self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_keyword_list[-1][0]))
+                if self.matching_static_keyword_list[-1][0] in possible_static_keywords:
+                    self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_static_keyword_list[-1][0]))
 
-                elif self.matching_keyword_list[-1][0] in self.dyn_keywords[-1]:
-                    print self.matching_keyword_list[-1][0]
+                elif self.matching_static_keyword_list[-1][0] in self.dyn_keywords[-1]:
+                    print self.matching_static_keyword_list[-1][0]
                     break
 
-            elif len(self.matching_keyword_list[-1]) is 0:
+            elif len(self.matching_static_keyword_list[-1]) is 0:
                 self.status = 'no_label_match'
                 break
 
-            elif len(self.matching_keyword_list[-1]) > 1:
+            elif len(self.matching_static_keyword_list[-1]) > 1:
                 if self.matching_keyword_type_list[-1] is 'static':
                     self.status = 'label_conflict'
                 else:

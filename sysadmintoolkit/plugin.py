@@ -1,4 +1,5 @@
 import sysadmintoolkit
+import collections
 import logging
 
 
@@ -169,3 +170,29 @@ class Plugin(object):
         '''
         '''
         return []
+
+    def clear_cache(self):
+        '''
+        '''
+        return
+
+
+class PluginSet(object):
+    def __init__(self):
+        self.plugins = collections.OrderedDict()
+
+    def add_plugin(self, plugin):
+        '''
+        Adds a new plugin to the set.
+
+        Note: Will not add or update a plugin that has already been added.
+        '''
+        if plugin.get_name() not in self.plugins:
+            self.plugins[plugin.get_name()] = plugin
+
+    def get_plugins(self):
+        return self.plugins
+
+    def clear_cache(self):
+        for plugin in self.plugins:
+            self.plugins[plugin].clear_cache()

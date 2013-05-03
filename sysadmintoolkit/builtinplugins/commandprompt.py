@@ -20,7 +20,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
     '''
     '''
     def __init__(self, logger, config):
-        super(CommandPrompt, self).__init__("commandprompt", logger, config)
+        super(CommandPrompt, self).__init__('commandprompt', logger, config)
 
         self.add_command(sysadmintoolkit.command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(sysadmintoolkit.command.ExecCommand('debug commandprompt', self, self.debug))

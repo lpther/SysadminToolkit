@@ -79,5 +79,5 @@ Out of scope:
 	
 * Thanks
 
-Khosrow Ebrahimpour for is invaluable talent and charisma
+Khosrow Ebrahimpour for his invaluable talent and charisma
 Wikipedia

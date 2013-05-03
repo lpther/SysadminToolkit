@@ -5,6 +5,8 @@ import termios
 import fcntl
 import struct
 import logging
+import imp
+import subprocess
 
 
 def get_terminal_size(fd=1):
@@ -29,6 +31,17 @@ def get_terminal_size(fd=1):
             hw = (25, 80)
 
     return hw
+
+
+def get_status_output(shellcmd):
+    '''
+    Executes the provided shellcmd in a shell, and returns (return_code, output)
+
+    stderr is interleaved in the returned output
+    '''
+    fulloutput = subprocess.check_output(shellcmd + '; echo $?', shell=True, stderr=subprocess.STDOUT)
+
+    return int(fulloutput.splitlines()[-1]), '\n'.join(fulloutput.splitlines()[:-1])
 
 
 def indent_text(text, indent=2, width=80, keep_newline=True):
@@ -153,22 +166,6 @@ def get_matching_prefix(prefix, possibilities):
         return [p for p in possibilities if p.startswith(prefix)]
 
 
-def set_config_logging(config, log_destination, log_level):
-    '''
-    for each config section, set log-destination and log-level to
-    the appropriate values.
-
-    None will make no changes
-
-    '''
-    for section in config.sections():
-        if log_destination is not None:
-            config.set(section, 'log-destination', log_destination)
-
-        if log_level is not None:
-            config.set(section, 'log-level', log_level)
-
-
 def get_logging_level(strlevel):
     '''
     Returns the correct logging level (from package)
@@ -238,8 +235,117 @@ def get_syslog_facility(strfacility):
         return None
 
 
+def override_config(config, attr, value):
+    '''
+    Set the attribute to a specified value for all sections in the config.
+
+    config         ConfigParser     config object
+    attr, value    str
+    '''
+    for section in config.sections():
+            config.set(section, attr, value)
+
+
+def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
+    '''
+    Returns a pluginset containing all loadable plugins.
+
+    config        ConfigParser.ConfigParser
+    plugindir     str
+    logger        logging.Logger
+    first_plugins [str]
+    '''
+    import sysadmintoolkit
+
+    plugin_set = sysadmintoolkit.plugin.PluginSet()
+
+    for plugin in first_plugins:
+        if plugin in config.sections():
+            logger.debug('Loading plugin %s in priority' % plugin)
+
+            try:
+                module = get_python_module(plugin, plugindir, logger)
+            except Exception as e:
+                logger.error('Error loading plugin %s: %s' % (plugin, e))
+                continue
+
+            try:
+                module_logger = get_logger('plugin.%s' % plugin, dict(config.items(plugin)), logger)
+
+                plugin_set.add_plugin(module.get_plugin(dict(config.items(plugin)), module_logger))
+                logger.info('Loaded plugin %s successfully' % plugin)
+            except Exception as e:
+                pass
+
+    for plugin in config.sections():
+        if plugin not in first_plugins:
+            logger.debug('Loading plugin %s' % plugin)
+
+            try:
+                module = get_python_module(plugin, plugindir, logger)
+            except Exception as e:
+                logger.error('Error loading plugin %s: %s' % (plugin, e))
+                continue
+
+            try:
+                module_logger = get_logger('plugin.%s' % plugin, dict(config.items(plugin)), logger)
+
+                plugin_set.add_plugin(module.get_plugin(dict(config.items(plugin)), module_logger))
+                logger.info('Loaded plugin %s successfully' % plugin)
+            except Exception as e:
+                logger.error('Error loading plugin %s: Python module loaded successfully but get_plugin() failed' % plugin)
+                logger.debug('Full error: %s' % e)
+
+    return plugin_set
+
+
+def get_python_module(plugin, plugindir, logger):
+    '''
+    '''
+    sysadmin_toolkit_module = imp.load_module("sysadmin_toolkit_module", \
+                                              imp.find_module('sysadmintoolkit')[0], \
+                                              imp.find_module('sysadmintoolkit')[1], \
+                                              imp.find_module('sysadmintoolkit')[2])
+
+    plugin_module = None
+    module_file = None
+
+    try:
+        module_file, pathname, description = imp.find_module(plugin, ['%s/builtinplugins/' % sysadmin_toolkit_module.__path__[0]])
+
+        plugin_module = imp.load_module('runtimeplugins_%s' % plugin, module_file, pathname, description)
+
+        logger.debug('Built-in plugin %s loaded successfully' % plugin)
+
+    except ImportError:
+        # Module was not found in the builtinplugins
+        pass
+    finally:
+        if module_file is not None:
+            module_file.close()
+
+    if plugin_module is None:
+        try:
+            module_file, pathname, description = imp.find_module(plugin, [plugindir])
+
+            plugin_module = imp.load_module('runtimeplugins_%s' % plugin, module_file, pathname, description)
+
+            logger.debug('User plugin %s loaded successfully' % plugin)
+
+        finally:
+            if module_file is not None:
+                module_file.close()
+
+    return plugin_module
+
+
 def get_logger(name, config, logger=None):
     '''
+    Returns a logger instance
+
+    name      str (logging.Logger name)
+    Config    dict with proper 'log-level' and 'log-destination' information
+
     Pass a logger to log about logging logs (woooa)
     '''
     log_level = config['log-level']
@@ -298,14 +404,24 @@ def get_logger(name, config, logger=None):
             elif len(full_logtype.split(':')) is 2:
                 strfacility = full_logtype.split(':')[1]
 
+                ip = ('localhost', logging.handlers.SYSLOG_UDP_PORT)
+
+                if '@' in strfacility:
+                    strfacility, ip[0] = strfacility.split('@')
+
                 facility = get_syslog_facility(strfacility)
+
                 if facility is not None:
-                    logger.newaddHandler(logging.handlers.SysLogHandler(facility=facility))
-                else:
+                    facility = logging.handlers.SysLogHandler.LOG_USER
+
+                try:
+                    logger.addHandler(logging.handlers.SysLogHandler(address=ip, facility=facility))
+
+                except:
                     if logger is not None:
-                        logger.error('Logging syslog destination %s is invalid for plugin %s (bad facility)' % (full_logtype, name))
+                        logger.error('Logging syslog destination %s is invalid for plugin %s' % (full_logtype, name))
                     else:
-                            print 'Logging syslog destination %s is invalid for plugin %s (bad facility)' % (full_logtype, name)
+                            print 'Logging syslog destination %s is invalid for plugin %s' % (full_logtype, name)
                             continue
 
         if logger is not None:

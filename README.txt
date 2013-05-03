@@ -3,23 +3,23 @@ SysadminToolkit - Easily create CLIs from your many and specialized scripts and 
 =====================================================================================
 
 Terminology:
-	label		: full command, ex: "display system time"
+	label		: full command, ex: "display system uptime"
 	keyword		: a word from a label, separated from a <space>. Must not 
 				  contain a special character (see below)
 	
 Reserved labels:
-	"mod ..."				: restrict the scope of the following label to one plugin
-	"help <pluginname>"		: display the plugin's main help
-	"exit ..."				: exits current mode, go back to previous mode if available
-	"quit ..."				: exits to shell
-	"set ..."				: change configuration during run time
+	"mod ..."				: restrict the scope of the following label to one plugin (later)
+	"help <pluginname>"		: display the plugin's main help (later)
+	"exit ..."				: exits current mode, go back to previous mode if available (later)
+	"quit ..."				: exits to shell (later)
+	"set ..."				: change configuration during run time (later)
 	
 Special character meanings:
 	" " (space)		: keyword separator
-	?				: contextual help
+	?				: contextual help (later)
 	<keyword>		: dynamic keyword
 	\n				: execute current label
-	tab				: command completion
+	tab				: command completion (later)
 	
 	Note: All other characters can be used by modules
   
@@ -31,25 +31,25 @@ Current features:
 Initial release features:
 	CLI Features
 	[x]	Call from linux's shell
-		Functional plugins mechanics
+	[x]	Functional plugins mechanics
 	
 	Built-in plugins
-		commandprompt (debugging)
-		shellcommand  (simple label to shell mapping/help)
+	[x]	commandprompt (debugging)
+	[x]	shellcommand  (simple label to shell mapping/help)
 		
 	Installation and configuration
-		Basic configuration file loading, passing the config to plugins
-		Configurable logging 
+	[x]	Basic configuration file loading, passing the config to plugins
+	[x]	Configurable logging 
 	
 Soon after:
 	Documentation
 		Describe the target audience
-		Dynamic keyword support
 		
 	CLI Features
-		Command completion
+	[x]	Command completion
 		Contextual help
 		Notify plugins to clear cache when changing modes
+	[x]	Dynamic keyword support
 		
 	Installation and configuration
 		Make setup.py works for install
@@ -57,12 +57,11 @@ Soon after:
 Later:
 	Convert to nice md or rst text
 	Support parsing of main config file
-		Parse and type checking
-		Plugin definition here
-	Support for simple label to shell command mapping
-	Support for same label, but different plugin (conflict handling)
+	[x]	Parsing and loading default
+	[x]	Plugin definition here
+[x]	Support for same label, but different plugin (conflict handling)
 	Sudo-like use, ex: operator account could switch to root for the scope of the CLI or the submode
-	Advanced logging (syslog/remote syslog)
+[x]	Advanced logging (syslog/remote syslog)
 	Plugin design philosophy
 	Design document and expand documentation
 	Maximize docstring usage in plugins, for easy documentation for the sysadmins ;-)

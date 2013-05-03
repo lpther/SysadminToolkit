@@ -73,6 +73,8 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         second_block_len = int(min(width, max_block_size) * (1 - window_ratio)) - 1
 
         print
+        print '  Loaded plugins: %s' % ', '.join(self.plugin_set.get_plugins().keys())
+        print
         print '  Command tree (%s)' % cmdprompt.mode
         print '  ' + ('=' * len('Command tree (%s)' % cmdprompt.mode))
         print

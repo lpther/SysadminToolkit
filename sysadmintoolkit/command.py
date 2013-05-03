@@ -21,6 +21,10 @@ class Label(object):
         except:
             raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a string (1st arg)', errno=303)
 
+        for reserved_char in sysadmintoolkit.cmdprompt.CmdPrompt.get_reserved_characters():
+            if reserved_char in self.label:
+                raise sysadmintoolkit.exception.PluginError('Error initializing command : Command label has a reserved character (%s)' % reserved_char, errno=303)
+
         # Validated Plugin
         if isinstance(plugin, sysadmintoolkit.plugin.Plugin):
             self.plugin = plugin
@@ -70,7 +74,7 @@ class ExecCommand(Label):
         if type(function) is type(self.get_label):
             self.function = function
         else:
-            raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a function (3rd arg) for label "%s"' % label, errno=303)
+            raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a bound method (3rd arg) for label "%s"' % label, errno=303)
 
         self.allow_conflict = allow_conflict
 

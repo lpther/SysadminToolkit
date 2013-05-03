@@ -6,17 +6,6 @@ import logging
 class Plugin(object):
     '''
     '''
-    plugin = None
-
-    @classmethod
-    def get_plugin(cls, config, logger):
-        '''
-        '''
-        if Plugin.plugin is None:
-            plugin = Plugin('genericplugin', logger, config)
-
-        return plugin
-
     def __init__(self, name, logger, config):
         '''
         '''
@@ -40,6 +29,8 @@ class Plugin(object):
         self.dyn_keyword_map = { '': {} }
 
         self.config = config
+
+        self.plugin_set = {}
 
     def add_command(self, command, modes=[]):
         '''
@@ -176,10 +167,16 @@ class Plugin(object):
         '''
         return
 
+    def update_plugin_set(self, plugin_set):
+        self.plugin_set = plugin_set
+
 
 class PluginSet(object):
     def __init__(self):
         self.plugins = collections.OrderedDict()
+
+    def __str__(self):
+        return '[%s]' % ', '.join(self.plugins.keys())
 
     def add_plugin(self, plugin):
         '''

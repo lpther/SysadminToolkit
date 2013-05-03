@@ -306,6 +306,8 @@ class CmdPromptTestCase(unittest.TestCase):
         cmd.preloop()
 
         try:
+            sys.stdout = self.devnull
+
             self.assertEqual(behavedplugin1.last_state, 'init')
             self.assertEqual(behavedplugin2.last_state, 'init')
 

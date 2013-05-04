@@ -3,6 +3,9 @@ import cmd
 import readline
 import logging
 import pprint
+import subprocess
+import sys
+import tempfile
 
 
 class CmdPrompt(cmd.Cmd):
@@ -171,7 +174,7 @@ class CmdPrompt(cmd.Cmd):
 
         user_input = _UserInput(line, self, plugin_scope)
 
-        if user_input.status is 'exec_commands':
+        if user_input.status.startswith('exec_commands'):
             # The command matches to a label in the keyword tree
             # Action: Execute the command (if allowed by the commands)
             executable_commands = user_input.keyword_list[-1].get_executable_commands()
@@ -189,11 +192,16 @@ class CmdPrompt(cmd.Cmd):
 
             last_return_code = 401
 
-            for keycmd in keys:
-                if len(keys) > 1:
-                    print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
+            # Redirect output to a new process
+            if user_input.status is 'exec_commands_with_pipe':
+                pipe_command_process = subprocess.Popen(user_input.rest_of_line, shell=True, stdin=subprocess.PIPE)
+                sys.stdout = pipe_command_process.stdin
 
+            for keycmd in keys:
                 try:
+                    if len(keys) > 1:
+                        print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
+
                     last_return_code = executable_commands[keycmd].get_function()(self.merge_keywords(keywords_for_plugin), self.mode)
 
                     if last_return_code is None:
@@ -206,10 +214,6 @@ class CmdPrompt(cmd.Cmd):
 
                     print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
 
-                    if not self.is_interactive:
-                        return 401
-                    else:
-                        return
                 try:
                     if last_return_code is None:
                         last_return_code = 0
@@ -219,6 +223,11 @@ class CmdPrompt(cmd.Cmd):
                     self.logger.warning('Plugin %s, label "%s" returned an invalid value' % \
                                         (' '.join([user_input.matching_static_keyword_list[i][0] for i in range(len(user_input.matching_static_keyword_list))]), \
                                          executable_commands[keycmd].get_plugin().get_name()))
+
+            if user_input.status is 'exec_commands_with_pipe':
+                sys.stdout.close()
+                pipe_command_process.wait()
+                sys.stdout = sys.__stdout__
 
             if not self.is_interactive:
                 return last_return_code
@@ -509,7 +518,7 @@ class _UserInput(object):
 
             self.input_keyword_list.append(this_keyword)
 
-            if this_keyword is '':
+            if this_keyword is '' or this_keyword.startswith('|'):
                 # End of user input for this label
 
                 # Remove last match from most accumulated lists
@@ -535,20 +544,23 @@ class _UserInput(object):
                 if (conflicting_commands is 0 and len(executable_commands) >= 1) or \
                     (conflicting_commands is 1 and len(executable_commands) is 1):
 
-                    self.status = 'exec_commands'
-                    self.executable_commands = executable_commands
+                    if this_keyword is '':
+                        self.status = 'exec_commands'
+                    elif this_keyword.startswith('|'):
+                        self.status = 'exec_commands_with_pipe'
+                        self.rest_of_line = '%s %s' % (this_keyword[1:], self.rest_of_line)
 
                 elif conflicting_commands > 1:
                     self.status = 'command_conflict'
-                    self.executable_commands = executable_commands
 
                 else:
                     self.status = 'no_command_match'
-                    self.executable_commands = executable_commands
+
+                self.executable_commands = executable_commands
 
                 break
 
-            if len(self.matching_static_keyword_list[-1]) is 1:
+            elif len(self.matching_static_keyword_list[-1]) is 1:
                 # Only one match, dig deeper in the keyword tree
                 if self.matching_static_keyword_list[-1][0] in possible_static_keywords:
                     self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_static_keyword_list[-1][0]))

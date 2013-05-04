@@ -5,7 +5,6 @@ import logging
 import pprint
 import subprocess
 import sys
-import tempfile
 
 
 class CmdPrompt(cmd.Cmd):
@@ -194,8 +193,11 @@ class CmdPrompt(cmd.Cmd):
 
             # Redirect output to a new process
             if user_input.status is 'exec_commands_with_pipe':
-                pipe_command_process = subprocess.Popen(user_input.rest_of_line, shell=True, stdin=subprocess.PIPE)
-                sys.stdout = pipe_command_process.stdin
+                if self.shell_allowed:
+                    pipe_command_process = subprocess.Popen(user_input.rest_of_line, shell=True, stdin=subprocess.PIPE)
+                    sys.stdout = pipe_command_process.stdin
+                else:
+                    self.logger.warning('Shell interaction is not allowed, pipe ignored')
 
             for keycmd in keys:
                 try:
@@ -224,7 +226,7 @@ class CmdPrompt(cmd.Cmd):
                                         (' '.join([user_input.matching_static_keyword_list[i][0] for i in range(len(user_input.matching_static_keyword_list))]), \
                                          executable_commands[keycmd].get_plugin().get_name()))
 
-            if user_input.status is 'exec_commands_with_pipe':
+            if user_input.status is 'exec_commands_with_pipe' and self.shell_allowed:
                 sys.stdout.close()
                 pipe_command_process.wait()
                 sys.stdout = sys.__stdout__

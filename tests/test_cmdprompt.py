@@ -335,3 +335,15 @@ class CmdPromptTestCase(unittest.TestCase):
 
         finally:
             sys.stdout = self.original_stdout
+
+    def test_command_analysis(self):
+        behavedplugin1 = dummyplugin.BehavedPlugin('behavedplugin1')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+
+        cmd.preloop()
+
+        self.assertTrue('exec_commands' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command', cmd).status)
+        self.assertTrue('exec_commands_with_pipe' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).status)
+        self.assertTrue('some shell command' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).rest_of_line)

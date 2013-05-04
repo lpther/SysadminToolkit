@@ -68,7 +68,7 @@ Initial release (0.1.0) features:
 	- Call a command from linux's shell
 	- Command completion (bash style) **not yet functionnal**
 	- Command conflict handling for cases where a label is entered by multiple plugins
-	- "|" support to redirect a command to another process **not yet functionnal**
+	- "|" support to redirect a command to another process
 	- "?" shows contextual help **not yet functionnal**
 	- Plugins can use dynamic keywords, with full autocompletion and conflict handling support
 	- Mode based CLI can be created: operator, root or configuration. Each mode could have a different set of commands. **not yet functionnal**

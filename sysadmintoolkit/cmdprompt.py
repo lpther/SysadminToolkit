@@ -44,10 +44,10 @@ class CmdPrompt(cmd.Cmd):
                         if token is '':
                             current_keyword += ' '
                         else:
-                            keywords += [current_keyword]
+                            keywords += [current_keyword + ' ']
                             current_keyword = token
 
-                    return keywords
+                    return keywords + [current_keyword + ' ']
 
         else:
             raise sysadmintoolkit.exception.SysadminToolkitError('Label is not string type')
@@ -78,11 +78,6 @@ class CmdPrompt(cmd.Cmd):
     def is_dynamic_keyword(cls, keyword):
         return keyword.startswith('<') and keyword.endswith('>')
 
-    @classmethod
-    def get_matching_dyn_prefix(cls, keyword, keyword_tree):
-        pass
-        # keyword_tree.
-
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
                  mode="generic", prompt='sysadmin-toolkit# ',
                  shell_allowed=False, is_interactive=True):
@@ -104,6 +99,7 @@ class CmdPrompt(cmd.Cmd):
 
         # Switching readline delims for allowed characters
         readline.set_completer_delims(' \n\r')
+        # readline.set_completion_display_matches_hook(self.readline_display_matches_hook)
 
         self.logger.debug('  raw readline completer delims="%s"' % readline.get_completer_delims().__repr__())
         self.logger.debug('  identchars="%s"' % self.identchars)
@@ -159,8 +155,6 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug('Registering command label "%s" into command tree' % (command.get_label()))
 
         self.command_tree.add_command(CmdPrompt.split_label(command.get_label()), command)
-
-    # Redefining commands from cmd.CMD
 
     def default(self, line, plugin_scope=None):
         """
@@ -231,118 +225,122 @@ class CmdPrompt(cmd.Cmd):
                 pipe_command_process.wait()
                 sys.stdout = sys.__stdout__
 
-            if not self.is_interactive:
-                return last_return_code
-            else:
-                return
+        else:
+            last_return_code = self.print_error_on_user_input(user_input)
 
-        elif user_input.status is 'command_conflict':
-            # One or more commands are executable, but they do not allow conflict
-            # Action: Display error message
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
-            leading_whitespaces = len(line) - len(line.lstrip())
+        # This must be here to prevent a leading whitespace in the prompt
+        sys.stdout.write('')
 
-            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specify plugin !')
+        if not self.is_interactive:
+            return last_return_code
+        else:
+            return
 
-            if not self.is_interactive:
-                return 403
-            else:
-                return
+    def complete(self, text, state, plugin_scope=None):
+        '''
+        '''
+        if state is 0:
+            original_line = readline.get_line_buffer()
 
-        elif user_input.status is 'no_command_match':
-            # There is a matching label but no matching executable command
-            # Action: Display error message for the keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
-            leading_whitespaces = len(line) - len(line.lstrip())
+            completion_line = original_line[0:readline.get_endidx()]
 
-            if plugin_scope is None:
-                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found !')
-            else:
-                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found for plugin %s !' % plugin_scope)
+            self.logger.debug('Command auto completion, user input: "%s", state is %s, completion_type is %s' \
+                              % (original_line, state, readline.get_completion_type()))
+            self.logger.debug('  begidx=%s endidx=%s completion_line="%s"' % (readline.get_begidx(), readline.get_endidx(), completion_line))
 
-            if not self.is_interactive:
-                return 410
-            else:
-                return
+            self.completion_user_input = _UserInput(completion_line, self, plugin_scope, completion=True)
 
-        elif user_input.status is 'no_label_match':
-            # There is no matching label in the keyword tree,
-            # Action: Display error message for the bad keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
-            leading_whitespaces = len(line) - len(line.lstrip())
+            self.logger.debug('Completion matches are %s' % self.completion_user_input.completion_matches)
 
+            if len(self.completion_user_input.completion_matches) is 0 or \
+            (self.completion_user_input.status is 'label_conflict' and self.completion_user_input.input_keyword_list[-1] is not '' and self.completion_user_input.rest_of_line is not ''):
+                self.print_error_on_user_input(self.completion_user_input)
+                self.completion_matches = []
+            elif len(self.completion_user_input.completion_matches) is 1:
+                self.completion_user_input.completion_matches[0] += ' '
+
+        try:
+            return self.completion_user_input.completion_matches[state]
+        except IndexError:
+            return None
+
+    def readline_display_matches_hook(self, substitution, matches, longest_match_length):
+        self.logger.debug('Readline display matches hook:\n substitution=%s, matches=%s longtest_match_length=%s' % \
+                          (substitution, matches, longest_match_length))
+
+        print
+
+        for match in matches:
+                print match
+
+        print "%s%s" % (self.prompt, readline.get_line_buffer()),
+        readline.redisplay()
+
+    def print_error_on_user_input(self, user_input):
+        ok_keywords = ''.join(self.split_label(user_input.rawcmd, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
+
+        leading_whitespaces = len(user_input.rawcmd) - len(user_input.rawcmd.lstrip())
+
+        return_code = 301
+
+        if user_input.completion:
+            print
+
+        if user_input.status is 'no_label_match':
+            # More than one label matches the keyword
+            # Action: Display error message about the conflicting keyword
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
-
-            if not self.is_interactive:
-                return 411
-            else:
-                return
+            return_code = 411
 
         elif user_input.status is 'label_conflict':
             # More than one label matches the keyword
             # Action: Display error message about the conflicting keyword
-            ok_keywords = ''.join(self.split_label(line, preserve_spaces=True)[:len(user_input.input_keyword_list) - 1])
-            leading_whitespaces = len(line) - len(line.lstrip())
-
             self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Conflict found! Either type "use <plugin> cmd" or type the complete command')
 
             # The conflict is not at the end of the command
             # Action: Display conflicting keywords and their related plugins
             self.print_conflict_keywords(user_input)
+            return_code = 404
 
-            if not self.is_interactive:
-                return 404
+        elif user_input.status is 'command_conflict':
+            # One or more commands are executable, but they do not allow conflict
+            # Action: Display error message
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specify plugin !')
+            return_code = 403
+
+        elif user_input.status is 'no_command_match':
+            # There is a matching label but no matching executable command
+            # Action: Display error message for the keyword
+            if user_input.scope is None:
+                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found !')
             else:
-                return
+                self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No executable command found for plugin %s !' % user_input.scope)
+            return_code = 410
 
         elif user_input.status is 'dynamic_keyword_conflict':
             # There is more than one match, in more than one dynamic keyword type
             # Action: Display conflicting dynamix keywords and their related plugins
             self.print_conflict_keywords(user_input)
 
-            if not self.is_interactive:
-                return 404
-            else:
-                return
-
+            return_code = 404
         else:
             # We should never get here, warning message and dabug if available
-            self.logger.warn('Command prompt was unable to parse line %s' % line)
+            self.logger.warn('Command prompt was unable to parse line %s' % user_input.rawcmd)
             self.logger.debug('UserInput analysis:\n%s' % str(user_input))
 
-            if not self.is_interactive:
-                return 301
-            else:
-                return
+            return_code = 301
 
-    def complete_default(self, text, line, begidx, endidx):
-        '''
-        '''
-        self.logger.debug("Command Prompt: completedefault: text='%s' line='%s' begidx=%s endidx=%s" % (text, line, begidx, endidx))
-        self.logger.debug("  lastcmd='%s'" % (self.lastcmd))
-        self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
+        if user_input.completion:
+            print "%s%s" % (self.prompt, readline.get_line_buffer()),
+            readline.redisplay()
 
-        return []
-
-    def complete(self, text, state, plugin_scope=None):
-        '''
-        '''
-        self.logger.debug("\nCommand Prompt: complete: text='%s' state=%s" % (text, state))
-        self.logger.debug("  completiontype=%s" % (readline.get_completion_type()))
-        self.logger.debug("  lastcmd='%s'" % (self.lastcmd))
-        self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
-
-        line = readline.get_line_buffer()
-
-        statusdict = self.get_line_status(line, plugin_scope)
-
-        return statusdict
+        return return_code
 
     def print_cli_error(self, pos, errmsg):
         '''
         '''
         if self.is_interactive:
-            prefix = ''.ljust(pos - 1) + ' ^--- '
+            prefix = ''.ljust(pos) + '^--- '
         else:
             prefix = 'CLI Error: '
 
@@ -411,6 +409,58 @@ class CmdPrompt(cmd.Cmd):
         cmd, arg = line[:i], line[i:].strip()
         return cmd, arg, line
 
+    def cmdloop(self, intro=None):
+        """Repeatedly issue a prompt, accept input, parse an initial prefix
+        off the received input, and dispatch to action methods, passing them
+        the remainder of the line as argument.
+
+        """
+
+        self.preloop()
+        if self.use_rawinput and self.completekey:
+            try:
+                import readline
+                self.old_completer = readline.get_completer()
+                readline.set_completer(self.complete)
+                readline.parse_and_bind(self.completekey + ": complete")
+            except ImportError:
+                pass
+        try:
+            if intro is not None:
+                self.intro = intro
+            if self.intro:
+                self.stdout.write(str(self.intro) + "\n")
+            stop = None
+            while not stop:
+                if self.cmdqueue:
+                    line = self.cmdqueue.pop(0)
+                else:
+                    if self.use_rawinput:
+                        try:
+                            # sys.stdout.write('')
+                            line = raw_input(self.prompt)
+                        except EOFError:
+                            line = 'EOF'
+                    else:
+                        self.stdout.write(self.prompt)
+                        self.stdout.flush()
+                        line = self.stdin.readline()
+                        if not len(line):
+                            line = 'EOF'
+                        else:
+                            line = line.rstrip('\r\n')
+                line = self.precmd(line)
+                stop = self.onecmd(line)
+                stop = self.postcmd(stop, line)
+            self.postloop()
+        finally:
+            if self.use_rawinput and self.completekey:
+                try:
+                    import readline
+                    readline.set_completer(self.old_completer)
+                except ImportError:
+                    pass
+
     def update_window_size(self, width, height):
         '''
         '''
@@ -426,7 +476,7 @@ class CmdPrompt(cmd.Cmd):
 class _UserInput(object):
     '''
     '''
-    def __init__(self, rawcmd, cmdprompt, scope=None):
+    def __init__(self, rawcmd, cmdprompt, scope=None, completion=False):
         self.rawcmd = rawcmd
         self.cmdprompt = cmdprompt
         self.scope = scope
@@ -456,6 +506,13 @@ class _UserInput(object):
         # List of commands to execute
         self.executable_commands = []
 
+        # Analyze for completion
+        self.completion = completion
+
+        self.completion_last_keyword_empty_str = len(self.rawcmd) is 0 or self.rawcmd[-1] is ' '
+
+        self.completion_matches = []
+
         self.analyze_cmd()
 
     def __str__(self):
@@ -469,7 +526,7 @@ class _UserInput(object):
         outstr.append('matching_dyn_keyword_list=%s' % pp.pformat(self.matching_dyn_keyword_list))
         outstr.append('dyn_keywords=%s' % pp.pformat(self.dyn_keywords))
         outstr.append('match_types=%s' % pp.pformat(self.matching_keyword_type_list))
-        outstr.append('rest_of_line="%s"' % self.rest_of_line)
+        outstr.append('rest_of_line="%s" completion_last_kw_empty_str=%s' % (self.rest_of_line, self.completion_last_keyword_empty_str))
         outstr.append('status=%s' % self.status)
 
         return '  ' + '\n  '.join(outstr)
@@ -520,15 +577,16 @@ class _UserInput(object):
 
             self.input_keyword_list.append(this_keyword)
 
-            if this_keyword is '' or this_keyword.startswith('|'):
+            if (this_keyword is '' or this_keyword.startswith('|')) and \
+            (not self.completion or \
+            (self.completion and not self.completion_last_keyword_empty_str)):
                 # End of user input for this label
-
-                # Remove last match from most accumulated lists
-                self.input_keyword_list.pop()
-                self.matching_static_keyword_list.pop()
-                self.matching_keyword_type_list.pop()
-                self.dyn_keywords.pop()
-                self.matching_dyn_keyword_list.pop()
+                if not self.completion or (self.completion and not self.completion_last_keyword_empty_str):
+                    self.input_keyword_list.pop()
+                    self.matching_static_keyword_list.pop()
+                    self.matching_keyword_type_list.pop()
+                    self.dyn_keywords.pop()
+                    self.matching_dyn_keyword_list.pop()
 
                 execplugins = self.keyword_list[-1].get_executable_commands().keys()
                 execplugins.sort()
@@ -562,14 +620,13 @@ class _UserInput(object):
 
                 break
 
-            elif len(self.matching_static_keyword_list[-1]) is 1:
+            elif len(self.matching_static_keyword_list[-1]) is 1 or \
+            (len(self.matching_static_keyword_list[-1]) is 1 and self.completion and self.completion_last_keyword_empty_str):
                 # Only one match, dig deeper in the keyword tree
-                if self.matching_static_keyword_list[-1][0] in possible_static_keywords:
-                    self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_static_keyword_list[-1][0]))
+                if this_keyword is '' and self.completion:
+                    self.completion_last_keyword_empty_str = False
 
-                elif self.matching_static_keyword_list[-1][0] in self.dyn_keywords[-1]:
-                    print self.matching_static_keyword_list[-1][0]
-                    break
+                self.keyword_list.append(self.keyword_list[-1].get_sub_keyword(self.matching_static_keyword_list[-1][0]))
 
             elif len(self.matching_static_keyword_list[-1]) is 0:
                 self.status = 'no_label_match'
@@ -586,6 +643,9 @@ class _UserInput(object):
             else:
                 self.status = 'ERROR: Command analysis failed with user input "%s" in mode %s' % (self.rawcmd, self.mode)
                 break
+
+        self.completion_matches = self.matching_static_keyword_list[-1] + self.matching_dyn_keyword_list[-1]
+        self.completion_matches.sort()
 
         self.cmdprompt.logger.debug('-' * 50)
         self.cmdprompt.logger.debug('Line analysis ended for line "%s" in mode %s' % (self.rawcmd, self.cmdprompt.mode))

@@ -138,7 +138,7 @@ class Plugin(object):
         '''
         self.cmdstack += [cmdprompt]
 
-        self.logger.debug('Entering mode %s' % (cmdprompt.mode))
+        self.logger.debug('Plugin %s is entering mode %s' % (self.name, cmdprompt.mode))
 
     def leave_mode(self, cmdprompt):
         '''

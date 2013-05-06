@@ -378,7 +378,9 @@ def get_logger(name, config, logger=None):
 
         elif logtype == 'file':
             try:
-                newlogger.addHandler(logging.FileHandler(full_logtype.split(':')[1]))
+                FileHandler = logging.FileHandler(full_logtype.split(':')[1])
+                FileHandler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
+                newlogger.addHandler(FileHandler)
             except:
                 if logger is not None:
                     logger.error('Logging destination %s is invalid for plugin %s' % (full_logtype, name))

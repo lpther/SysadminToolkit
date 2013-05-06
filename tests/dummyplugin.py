@@ -126,3 +126,35 @@ class BehavedDynamicPlugin_2(DummyPlugin):
 
     def reset_state(self, line, mode):
         self.last_state = 'init'
+
+
+class BehavedReadlineFriendlyDynamicPlugin(DummyPlugin):
+    '''
+    Testing of autocompletion. Readline does not implement a way to clear buffer content.
+
+    We can only "add" to the buffer. This will insert one command to test cases.
+    '''
+    def __init__(self, name):
+        super(BehavedReadlineFriendlyDynamicPlugin, self).__init__(name)
+
+        self.add_command(command.ExecCommand('unique <fruit> command <fruit>', self, self.behaved_function_1))
+        self.add_command(command.ExecCommand('universal <fruit> command', self, self.behaved_function_1))
+
+        self.add_dynamic_keyword_fn('<fruit>', self.resolve_dynamic_keyword)
+
+        self.dyn_command_line = ''
+
+    def behaved_function_1(self, line, mode):
+        self.last_state = 'plugin %s behaved function 1' % self.name
+        self.dyn_command_line = line
+        return 12345
+
+    def resolve_dynamic_keyword(self, dyn_keyword):
+        return {'apple': 'This is a green or red fruit', \
+                'banana': 'This is a yellow fruit', \
+                'apricot': 'This is an orange fruit', \
+                'pineapple': 'This is an orange and yellow fruit', \
+                }
+
+    def reset_state(self, line, mode):
+        self.last_state = 'init'

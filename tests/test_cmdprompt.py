@@ -4,6 +4,8 @@ import logging
 import unittest
 import sys
 import os
+import readline
+import subprocess
 
 
 class CmdPromptTestCase(unittest.TestCase):
@@ -347,3 +349,21 @@ class CmdPromptTestCase(unittest.TestCase):
         self.assertTrue('exec_commands' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command', cmd).status)
         self.assertTrue('exec_commands_with_pipe' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).status)
         self.assertTrue('some shell command' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).rest_of_line)
+
+    def test_auto_completion(self):
+        behavedplugin1 = dummyplugin.BehavedReadlineFriendlyDynamicPlugin('behavedreadlinefriendlydynamicplugin1')
+
+        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
+        cmd.add_plugin(behavedplugin1)
+
+        cmd.preloop()
+
+#        print cmd.completion_matches
+
+        try:
+            readline.insert_text('uni')
+            cmd.complete('uni', 0)
+            # print cmd.completion_matches
+            # self.assertEqual(cmd.completion_user_input.completion_matches, ['unique', 'universal'])
+        finally:
+            sys.stdout = self.original_stdout

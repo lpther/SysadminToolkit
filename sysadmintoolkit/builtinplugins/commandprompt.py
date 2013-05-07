@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 import sysadmintoolkit
 
 global plugin_instance
@@ -25,33 +27,33 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         self.add_command(sysadmintoolkit.command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(sysadmintoolkit.command.ExecCommand('debug commandprompt', self, self.debug))
 
-        use_help = sysadmintoolkit.command.LabelHelp('use', self, 'Restrict the command to a specific plugin')
-        use_help._Label__is_reserved = True
-        self.add_command(use_help)
+        # use_help = sysadmintoolkit.command.LabelHelp('use', self, 'Restrict the command to a specific plugin')
+        # use_help._Label__is_reserved = True
+        # self.add_command(use_help)
 
-        use_cmd = sysadmintoolkit.command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
-        use_cmd._Label__is_reserved = True
-        self.add_command(use_cmd)
+        # use_cmd = sysadmintoolkit.command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
+        # use_cmd._Label__is_reserved = True
+        # self.add_command(use_cmd)
 
-        help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
-        help_help._Label__is_reserved = True
-        self.add_command(help_help)
+        # help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
+        # help_help._Label__is_reserved = True
+        # self.add_command(help_help)
 
-        help_cmd = sysadmintoolkit.command.ExecCommand('help <plugin>', self, self.show_plugin_help)
-        help_cmd._Label__is_reserved = True
-        self.add_command(help_cmd)
+        # help_cmd = sysadmintoolkit.command.ExecCommand('help <plugin>', self, self.show_plugin_help)
+        # help_cmd._Label__is_reserved = True
+        # self.add_command(help_cmd)
 
-        exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
-        exit_cmd._Label__is_reserved = True
-        self.add_command(exit_cmd)
+        # exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
+        # exit_cmd._Label__is_reserved = True
+        # self.add_command(exit_cmd)
 
-        quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
-        quit_cmd._Label__is_reserved = True
-        self.add_command(quit_cmd)
+        # quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
+        # quit_cmd._Label__is_reserved = True
+        # self.add_command(quit_cmd)
 
-        set_cmd = sysadmintoolkit.command.ExecCommand('set', self, self.change_global_config)
-        set_cmd._Label__is_reserved = True
-        self.add_command(set_cmd)
+        # set_cmd = sysadmintoolkit.command.ExecCommand('set', self, self.change_global_config)
+        # set_cmd._Label__is_reserved = True
+        # self.add_command(set_cmd)
 
         self.add_dynamic_keyword_fn('<plugin>', self.get_plugins_for_use_cmd)
 

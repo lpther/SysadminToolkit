@@ -1,4 +1,4 @@
 #! /bin/bash
-export PYTHONPATH=../:$PYTHONPATH
+export PYTHONPATH=../../:$PYTHONPATH
 
-python -m sysadmintoolkit -c ./interactive/sysadmin-toolkit.conf $@
+python -m sysadmintoolkit -c ./tests/interactive/sysadmin-toolkit.conf $@

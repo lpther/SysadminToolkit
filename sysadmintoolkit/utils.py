@@ -23,6 +23,9 @@ def get_terminal_size(fd=1):
     try:
         hw = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
 
+        if not isinstance(hw[0], int) or not isinstance(hw[1], int):
+            hw = (25, 80)
+
     except:
 
         try:

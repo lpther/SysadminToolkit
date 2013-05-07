@@ -5,7 +5,7 @@ import unittest
 import sys
 import os
 import readline
-import subprocess
+import pexpect
 
 
 class CmdPromptTestCase(unittest.TestCase):
@@ -350,20 +350,18 @@ class CmdPromptTestCase(unittest.TestCase):
         self.assertTrue('exec_commands_with_pipe' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).status)
         self.assertTrue('some shell command' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).rest_of_line)
 
-    def test_auto_completion(self):
-        behavedplugin1 = dummyplugin.BehavedReadlineFriendlyDynamicPlugin('behavedreadlinefriendlydynamicplugin1')
+    def test_interactive_auto_completion(self):
+        p = pexpect.spawn('tests/interactive/sysadmin-toolkit')
 
-        cmd = sysadmintoolkit.cmdprompt.CmdPrompt(self.nulllogger, mode='testcase', is_interactive=False)
-        cmd.add_plugin(behavedplugin1)
+        p.expect('sysadmin-toolkit# ', timeout=2)
 
-        cmd.preloop()
+        p.send('\t\t')
+        p.expect('sysadmin-toolkit# ', timeout=2)
+        self.assertEqual(p.before.split(), ['\x07', 'conflicting', 'dummyplugin', 'help', 'quit', 'set', 'universal', 'debug', 'exit', 'non', 'reset', 'unique', 'use'])
 
-#        print cmd.completion_matches
+        p.send('uni\t\t')
+        p.expect('sysadmin-toolkit# ', timeout=2)
+        self.assertEqual(p.before.split(), ['uni\x07', 'unique', 'universal'])
+        p.sendcontrol('u')
 
-        try:
-            readline.insert_text('uni')
-            cmd.complete('uni', 0)
-            # print cmd.completion_matches
-            # self.assertEqual(cmd.completion_user_input.completion_matches, ['unique', 'universal'])
-        finally:
-            sys.stdout = self.original_stdout
+        p.kill(9)

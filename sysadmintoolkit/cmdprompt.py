@@ -5,6 +5,7 @@ import logging
 import pprint
 import subprocess
 import sys
+from cmd import Cmd
 
 
 class CmdPrompt(cmd.Cmd):
@@ -464,9 +465,6 @@ class CmdPrompt(cmd.Cmd):
     def update_window_size(self, width, height):
         '''
         '''
-        assert isinstance(width, int)
-        assert isinstance(height, int)
-
         self.width = width
         self.height = height
 
@@ -644,7 +642,10 @@ class _UserInput(object):
                 self.status = 'ERROR: Command analysis failed with user input "%s" in mode %s' % (self.rawcmd, self.mode)
                 break
 
-        self.completion_matches = self.matching_static_keyword_list[-1] + self.matching_dyn_keyword_list[-1]
+        for k in self.matching_static_keyword_list[-1] + self.matching_dyn_keyword_list[-1]:
+            if not CmdPrompt.is_dynamic_keyword(k):
+                self.completion_matches.append(k)
+
         self.completion_matches.sort()
 
         self.cmdprompt.logger.debug('-' * 50)

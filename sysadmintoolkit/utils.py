@@ -275,7 +275,7 @@ def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
             try:
                 module_logger = get_logger('plugin.%s' % plugin, dict(config.items(plugin)), logger)
 
-                plugin_set.add_plugin(module.get_plugin(dict(config.items(plugin)), module_logger))
+                plugin_set.add_plugin(module.get_plugin(module_logger, dict(config.items(plugin))))
                 logger.info('Loaded plugin %s successfully' % plugin)
             except Exception as e:
                 pass
@@ -293,7 +293,7 @@ def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
             try:
                 module_logger = get_logger('plugin.%s' % plugin, dict(config.items(plugin)), logger)
 
-                plugin_set.add_plugin(module.get_plugin(dict(config.items(plugin)), module_logger))
+                plugin_set.add_plugin(module.get_plugin(module_logger, dict(config.items(plugin))))
                 logger.info('Loaded plugin %s successfully' % plugin)
             except Exception as e:
                 logger.error('Error loading plugin %s: Python module loaded successfully but get_plugin() failed' % plugin)

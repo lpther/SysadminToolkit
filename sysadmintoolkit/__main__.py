@@ -51,8 +51,13 @@ if __name__ == '__main__':
         argparser.error('Configuration file could not be opened')
 
     try:
-        config = ConfigParser.SafeConfigParser(defaults)
+        config = ConfigParser.SafeConfigParser()
         config.read(args.config_file)
+
+        for default in defaults:
+            if default not in dict(config.items('DEFAULT')):
+                config.set('DEFAULT', default, defaults[default])
+
     except ConfigParser.Error as e:
         argparser.error('Configuration file could not be parsed:\n\n%s' % sysadmintoolkit.utils.indent_text(str(e)))
 
@@ -82,7 +87,7 @@ if __name__ == '__main__':
         sysadmintoolkit.utils.override_config(config, 'log-level', 'debug')
         sysadmintoolkit.utils.override_config(config, 'log-destination', 'console')
 
-    if args.debug:
+    if config.get('commandprompt', 'log-level') == 'debug':
         sysadmintoolkit.utils.print_config_contents(config)
 
     # ---- Initialize commandprompt logging

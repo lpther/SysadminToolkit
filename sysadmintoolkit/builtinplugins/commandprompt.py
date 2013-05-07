@@ -5,7 +5,7 @@ global plugin_instance
 plugin_instance = None
 
 
-def get_plugin(config, logger):
+def get_plugin(logger, config):
     '''
     '''
     global plugin_instance

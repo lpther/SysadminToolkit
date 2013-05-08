@@ -1,6 +1,9 @@
 __version__ = "0.1.0"
 
 import sysadmintoolkit
+import signal
+import sys
+import readline
 
 global plugin_instance
 
@@ -47,15 +50,24 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         exit_cmd._Label__is_reserved = True
         self.add_command(exit_cmd)
 
-        # quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
-        # quit_cmd._Label__is_reserved = True
-        # self.add_command(quit_cmd)
+        quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
+        quit_cmd._Label__is_reserved = True
+        self.add_command(quit_cmd)
 
         # set_cmd = sysadmintoolkit.command.ExecCommand('set', self, self.change_global_config)
         # set_cmd._Label__is_reserved = True
         # self.add_command(set_cmd)
 
         self.add_dynamic_keyword_fn('<plugin>', self.get_plugins_for_use_cmd)
+
+        def sigint_handler(signum=None, frame=None):
+            global plugin_instance
+            plugin_instance.logger.info('Received signal %s' % signum)
+            print '\n>> Use quit or exit to leave the program'
+            sys.stdout.write('%s%s' % (plugin_instance.cmdstack[-1].prompt, readline.get_line_buffer()))
+            sys.stdout.flush()
+
+        signal.signal(signal.SIGINT, sigint_handler)
 
     def debug(self, line, mode):
         '''
@@ -171,11 +183,16 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         print 'show plugin help not implemented yet !!'
 
     def exit_last_commandprompt_level(self, line, mode):
+        '''
+        Exit the current command prompt
+        '''
         return sysadmintoolkit.cmdprompt.EXIT_THIS_CMDPROMPT
 
     def exit_all_commandprompt_levels(self, line, mode):
+        '''
+        Exit the program
+        '''
         return sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT
 
     def change_global_config(self, line, mode):
         print 'change global config not implemented yet !!'
-        raise sysadmintoolkit.exception.CommandPromptError('Error initializing plugin : Plugin name requires a string (1st arg)', errno=302)

@@ -5,7 +5,10 @@ import logging
 import pprint
 import subprocess
 import sys
-from cmd import Cmd
+
+
+EXIT_THIS_CMDPROMPT = -12345
+EXIT_ALL_CMDPROMPT = -12346
 
 
 class CmdPrompt(cmd.Cmd):
@@ -235,7 +238,14 @@ class CmdPrompt(cmd.Cmd):
         if not self.is_interactive:
             return last_return_code
         else:
-            return
+            if last_return_code is EXIT_THIS_CMDPROMPT:
+                self.logger.debug('Command Prompt exiting mode %s' % self.mode)
+                return EXIT_THIS_CMDPROMPT
+            elif last_return_code is EXIT_ALL_CMDPROMPT:
+                self.logger.debug('Command Prompt exiting program (mode %s)' % self.mode)
+                return EXIT_ALL_CMDPROMPT
+            else:
+                return
 
     def complete(self, text, state, plugin_scope=None):
         '''

@@ -4,7 +4,6 @@ import logging
 import unittest
 import sys
 import os
-import readline
 import pexpect
 
 
@@ -355,13 +354,18 @@ class CmdPromptTestCase(unittest.TestCase):
 
         p.expect('sysadmin-toolkit# ', timeout=2)
 
+        # Tests the tab autocompletion, update as built-in commands list grows
         p.send('\t\t')
         p.expect('sysadmin-toolkit# ', timeout=2)
-        self.assertEqual(p.before.split(), ['\x07', 'conflicting', 'dummyplugin', 'help', 'quit', 'set', 'universal', 'debug', 'exit', 'non', 'reset', 'unique', 'use'])
+        autocompletion = p.before.split()[1:]
+        autocompletion.sort()
+        self.assertEqual(autocompletion, ['conflicting', 'debug', 'dummyplugin', 'exit', 'non', 'reset', 'unique', 'universal'])
 
         p.send('uni\t\t')
         p.expect('sysadmin-toolkit# ', timeout=2)
-        self.assertEqual(p.before.split(), ['uni\x07', 'unique', 'universal'])
+        autocompletion = p.before.split()[1:]
+        autocompletion.sort()
+        self.assertEqual(autocompletion, ['unique', 'universal'])
         p.sendcontrol('u')
 
         p.kill(9)

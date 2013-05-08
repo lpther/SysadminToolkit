@@ -43,9 +43,9 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         # help_cmd._Label__is_reserved = True
         # self.add_command(help_cmd)
 
-        # exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
-        # exit_cmd._Label__is_reserved = True
-        # self.add_command(exit_cmd)
+        exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
+        exit_cmd._Label__is_reserved = True
+        self.add_command(exit_cmd)
 
         # quit_cmd = sysadmintoolkit.command.ExecCommand('quit', self, self.exit_all_commandprompt_levels)
         # quit_cmd._Label__is_reserved = True
@@ -171,10 +171,10 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         print 'show plugin help not implemented yet !!'
 
     def exit_last_commandprompt_level(self, line, mode):
-        print 'exit last command prompt level not implemented yet !!'
+        return sysadmintoolkit.cmdprompt.EXIT_THIS_CMDPROMPT
 
     def exit_all_commandprompt_levels(self, line, mode):
-        print 'exit all command prompts not implemented yet !!'
+        return sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT
 
     def change_global_config(self, line, mode):
         print 'change global config not implemented yet !!'

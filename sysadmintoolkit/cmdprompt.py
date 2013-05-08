@@ -391,7 +391,7 @@ class CmdPrompt(cmd.Cmd):
             for plugin in self.plugins:
                 plugin.leave_mode(self)
         except Exception as e:
-            self.logger.warning('Plugin %s failed leaving mode %s:\n%s') % (plugin.get_name(), self.mode, str(e))
+            self.logger.warning('Plugin %s failed leaving mode %s:\n%s' % (plugin.get_name(), self.mode, str(e)))
 
     def emptyline(self):
         """Override the default emptyline and return a blank line."""

@@ -132,28 +132,27 @@ def get_grey_text(text):
     return '\033[37m' + text + '\033[0m'
 
 
-def print_config_contents(config):
-    print 'External and default configuration loaded'
-    print
-    width = min(get_terminal_size()[1], 100)
+def print_config_contents(config, logger):
+    logger.debug('External and default configuration loaded')
+    logger.debug('')
+    width = 100
 
     sections = config.sections()
     sections.sort()
 
     for section in sections:
-        print '  Section %s' % section
-        print
-        print '    %s %s' % ('Option'.ljust(int(width * 0.5)), 'Value')
-        print '    %s %s' % ('------'.ljust(int(width * 0.5)), '-----')
+        logger.debug('  Section %s' % section)
+        logger.debug('    %s %s' % ('Option'.ljust(int(width * 0.5)), 'Value'))
+        logger.debug('    %s %s' % ('------'.ljust(int(width * 0.5)), '-----'))
 
         options = config.options(section)
         options.sort()
 
         for option in options:
             value = config.get(section, option)
-            print '    %s %s' % (option.ljust(int(width * 0.5)), value)
+            logger.debug('    %s %s' % (option.ljust(int(width * 0.5)), value))
 
-        print
+        logger.debug('')
 
 
 def get_matching_prefix(prefix, possibilities):

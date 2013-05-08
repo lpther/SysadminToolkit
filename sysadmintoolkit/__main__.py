@@ -87,12 +87,11 @@ if __name__ == '__main__':
         sysadmintoolkit.utils.override_config(config, 'log-level', 'debug')
         sysadmintoolkit.utils.override_config(config, 'log-destination', 'console')
 
-    if config.get('commandprompt', 'log-level') == 'debug':
-        sysadmintoolkit.utils.print_config_contents(config)
-
     # ---- Initialize commandprompt logging
     CommandPromptLogger = sysadmintoolkit.utils.get_logger('commandprompt', dict(config.items('commandprompt')))
     CommandPromptLogger.debug("Started %s" % sys.executable)
+
+    sysadmintoolkit.utils.print_config_contents(config, CommandPromptLogger)
 
     # ---- Load plugins and their instance
     plugin_set = sysadmintoolkit.utils.get_plugins_from_config(config, config.get('commandprompt', 'plugin-dir'), CommandPromptLogger, ['commandprompt'])

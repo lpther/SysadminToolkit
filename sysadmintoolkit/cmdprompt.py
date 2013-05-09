@@ -300,7 +300,7 @@ class CmdPrompt(cmd.Cmd):
         if user_input.status is 'no_label_match':
             # More than one label matches the keyword
             # Action: Display error message about the conflicting keyword
-            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found !')
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'No matching command found!')
             return_code = 411
 
         elif user_input.status is 'label_conflict':

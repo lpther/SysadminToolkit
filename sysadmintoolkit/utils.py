@@ -132,6 +132,14 @@ def get_grey_text(text):
     return '\033[37m' + text + '\033[0m'
 
 
+def get_green_text(text):
+    return '\033[92m' + text + '\033[0m'
+
+
+def get_red_text(text):
+    return '\033[91m' + text + '\033[0m'
+
+
 def print_config_contents(config, logger):
     logger.debug('External and default configuration loaded')
     logger.debug('')

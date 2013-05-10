@@ -1,5 +1,5 @@
 
-# SysadminToolkit
+# SysadminToolkit #
 
 Easily create CLIs from your many and specialized scripts and tools, or code your python based plugins for advanced tasks.
 
@@ -17,8 +17,9 @@ If you are a python coder, even a beginner, you could code your own plugin to us
 
 ## Installation ##
 
-SysadminToolkit is coded for python 2.7 (conversion to 3.x will follow) on Ubuntu 12.04, and requires the following packages:
+SysadminToolkit is coded for python 2.7 on Ubuntu 12.04, and requires the following packages:
 
+- argparse
 - Pyparsing ([http://pyparsing.wikispaces.com/](http://pyparsing.wikispaces.com/))
 
 *Installation details to follow*
@@ -62,17 +63,14 @@ Launching the app will let you use the configured command to hide more complex t
 
 ## Features ##
 
-Initial release (0.1.0) features:
+Initial release (0.1.0a) features:
 
 - CLI Features
 	- Call a command from linux's shell
-	- Command completion (bash style) **not yet functionnal**
+	- Command completion (bash style)
 	- Command conflict handling for cases where a label is entered by multiple plugins
 	- "|" support to redirect a command to another process
-	- "?" shows contextual help **not yet functionnal**
 	- Plugins can use dynamic keywords, with full autocompletion and conflict handling support
-	- Mode based CLI can be created: operator, root or configuration. Each mode could have a different set of commands. **not yet functionnal**
-	- All help is based on python docstrings, to ease documentation for your commands
 - Built-in plugins
 	- commandprompt - for debugging and most built-in commands
 	- shellcommand - simple label to shell mapping/help

@@ -152,16 +152,6 @@ class Plugin(object):
         '''
         return self.name
 
-    def get_current_mode(self):
-        '''
-        '''
-        return self.currentmode
-
-    def get_dynamic_keyword_list(self, keyword):
-        '''
-        '''
-        return []
-
     def clear_cache(self):
         '''
         '''

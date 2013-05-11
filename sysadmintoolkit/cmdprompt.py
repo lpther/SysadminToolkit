@@ -169,6 +169,9 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
         self.logger.debug("  plugin_scope='%s'" % (plugin_scope))
 
+        if not self.is_interactive:
+            print '%s%s' % (self.prompt, line)
+
         user_input = _UserInput(line, self, plugin_scope)
 
         if user_input.status.startswith('exec_commands'):

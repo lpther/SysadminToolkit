@@ -7,6 +7,7 @@ import struct
 import logging
 import imp
 import subprocess
+import socket
 
 
 def get_terminal_size(fd=1):
@@ -138,6 +139,17 @@ def get_green_text(text):
 
 def get_red_text(text):
     return '\033[91m' + text + '\033[0m'
+
+
+def get_l4_portname(port, proto='tcp'):
+    name = 'unknown'
+
+    try:
+        name = socket.getservbyport(port, proto)
+    except:
+        pass
+
+    return name
 
 
 def print_config_contents(config, logger):

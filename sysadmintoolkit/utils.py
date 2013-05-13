@@ -43,9 +43,11 @@ def get_status_output(shellcmd):
 
     stderr is interleaved in the returned output
     '''
-    fulloutput = subprocess.check_output(shellcmd + '; echo $?', shell=True, stderr=subprocess.STDOUT)
-
-    return int(fulloutput.splitlines()[-1]), '\n'.join(fulloutput.splitlines()[:-1])
+    try:
+        output = subprocess.check_output(shellcmd, shell=True, stderr=subprocess.STDOUT)
+        return 0, output
+    except Exception as e:
+        return e.returncode, e.output
 
 
 def indent_text(text, indent=2, width=80, keep_newline=True):
@@ -150,6 +152,36 @@ def get_l4_portname(port, proto='tcp'):
         pass
 
     return name
+
+
+def is_ipv4_addr(inputstr):
+    from pyparsing import Combine, Word, nums
+
+    ipAddress = Combine(Word(nums) + ('.' + Word(nums)) * 3)
+
+    try:
+        ipAddress.parseString(inputstr)
+        return True
+    except:
+        return False
+
+
+def get_hexstr_from_ipv4_addr(ipv4addr):
+    try:
+        octetlist = []
+        for octetstr in ipv4addr.split('.'):
+            octetlist.append(hex(int(octetstr))[2:].upper().zfill(2))
+
+        return ''.join(octetlist)
+    except:
+        return None
+
+
+def get_hexstr_from_l4_port(l4port):
+    try:
+        return hex(int(l4port))[2:].upper().zfill(4)
+    except:
+        return None
 
 
 def print_config_contents(config, logger):

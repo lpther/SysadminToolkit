@@ -45,6 +45,7 @@ class PluginError(SysadminToolkitError):
         SysadminToolkitError.__init__(self, errmsg, errno=errno)
 
         self.errdict = {200: 'Critical', \
+                        201: 'Critical error in plugin initialization', \
                         300: 'Error', \
                         301: 'Error in registering command or plugin', \
                         302: 'Error in creating the plugin', \

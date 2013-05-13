@@ -617,6 +617,14 @@ class _UserInput(object):
 
                     if this_keyword is '':
                         self.status = 'exec_commands'
+
+                        # If the latest keyword entered matches exactly the possibilities, execute only this one
+                        if self.input_keyword_list[-1] in self.matching_static_keyword_list[-1]:
+                            self.matching_static_keyword_list[-1] = [self.input_keyword_list[-1]]
+
+                        if self.input_keyword_list[-1] in self.matching_dyn_keyword_list[-1]:
+                            self.matching_dyn_keyword_list[-1] = [self.input_keyword_list[-1]]
+
                     elif this_keyword.startswith('|'):
                         self.status = 'exec_commands_with_pipe'
                         self.rest_of_line = '%s %s' % (this_keyword[1:], self.rest_of_line)

@@ -6,6 +6,9 @@ Brainstorming about potential improvements
 
 - Convert to python 3.x compatible code
 - Code documentation
+- Add more unit testing
+    - Badly behaving dynamic keyword fn
+    - Prefix conflict with dynamic keyord
 
 ## Functionality ##
 

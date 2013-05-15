@@ -8,6 +8,7 @@ import logging
 import imp
 import subprocess
 import socket
+import traceback
 
 
 def get_terminal_size(fd=1):
@@ -37,17 +38,34 @@ def get_terminal_size(fd=1):
     return hw
 
 
-def get_status_output(shellcmd):
+def get_status_output(shellcmd, logger=None):
     '''
     Executes the provided shellcmd in a shell, and returns (return_code, output)
 
     stderr is interleaved in the returned output
+    Pass logger to log debugging
     '''
+    if logger is not None:
+        logger.debug('Executing non interactive command "%s"' % shellcmd)
+
     try:
         output = subprocess.check_output(shellcmd, shell=True, stderr=subprocess.STDOUT)
         return 0, output
     except Exception as e:
         return e.returncode, e.output
+
+
+def execute_interactive_cmd(shellcmd, logger=None):
+    '''
+    Executes the shellcmd in a shell, and returns the return_code
+
+    stderr is interleaved in the returned output
+    Pass logger to log debugging
+    '''
+    if logger is not None:
+        logger.debug('Executing interactive command "%s"' % shellcmd)
+
+    return subprocess.call(shellcmd, shell=True, stderr=subprocess.STDOUT)
 
 
 def indent_text(text, indent=2, width=80, keep_newline=True):
@@ -321,6 +339,7 @@ def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
                 module = get_python_module(plugin, plugindir, logger)
             except Exception as e:
                 logger.error('Error loading plugin %s: %s' % (plugin, e))
+                logger.debug(traceback.format_exc())
                 continue
 
             try:
@@ -339,6 +358,7 @@ def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
                 module = get_python_module(plugin, plugindir, logger)
             except Exception as e:
                 logger.error('Error loading plugin %s: %s' % (plugin, e))
+                logger.debug(traceback.format_exc())
                 continue
 
             try:
@@ -349,6 +369,7 @@ def get_plugins_from_config(config, plugindir, logger, first_plugins=[]):
             except Exception as e:
                 logger.error('Error loading plugin %s: Python module loaded successfully but get_plugin() failed' % plugin)
                 logger.debug('Full error: %s' % e)
+                logger.debug(traceback.format_exc())
 
     return plugin_set
 

@@ -329,7 +329,7 @@ class CmdPromptTestCase(unittest.TestCase):
             self.assertEqual(behavedplugin2.dyn_command_line, 'non conflicting banana command')
             self.assertEqual(cmd.onecmd('reset'), 0)
 
-            self.assertEqual(cmd.onecmd('non conflicting p command'), 404)
+            self.assertEqual(cmd.onecmd('non conflicting p command'), 405)
             self.assertEqual(behavedplugin1.last_state, 'init')
             self.assertEqual(behavedplugin2.last_state, 'init')
             self.assertEqual(cmd.onecmd('reset'), 0)

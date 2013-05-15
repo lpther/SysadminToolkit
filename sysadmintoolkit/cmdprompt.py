@@ -5,6 +5,7 @@ import logging
 import pprint
 import subprocess
 import sys
+import traceback
 
 
 EXIT_THIS_CMDPROMPT = -12345
@@ -216,6 +217,7 @@ class CmdPrompt(cmd.Cmd):
                                   executable_commands[keycmd].get_plugin().get_name(), self.mode, str(e)))
 
                     print '>> Error in command execution (see logs for details) : %s' % str(e).split()[0]
+                    self.logger.debug(traceback.format_exc())
 
                 try:
                     if last_return_code is None:
@@ -333,10 +335,18 @@ class CmdPrompt(cmd.Cmd):
 
         elif user_input.status is 'dynamic_keyword_conflict':
             # There is more than one match, in more than one dynamic keyword type
-            # Action: Display conflicting dynamix keywords and their related plugins
+            # Action: Display conflicting dynamic keywords and their related plugins
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Command conflict detected, type "use <plugin> cmd" to specify plugin !')
             self.print_conflict_keywords(user_input)
 
-            return_code = 404
+            return_code = 405
+        elif user_input.status is 'dynamic_keyword_multiple_prefix':
+            # There is more than one dynamic keyword returned by a plugin's function
+            # Action: Display conflicting dynamic keywords
+            self.print_cli_error(len(self.prompt + ok_keywords) + leading_whitespaces, 'Keyword conflict detected, type the full keyword !')
+            self.print_conflict_keywords(user_input)
+
+            return_code = 405
         else:
             # We should never get here, warning message and dabug if available
             self.logger.warn('Command prompt was unable to parse line %s' % user_input.rawcmd)
@@ -364,11 +374,16 @@ class CmdPrompt(cmd.Cmd):
         '''
         '''
         sep = 30
-        print
-        print '  %s %s' % ('Keyword'.ljust(sep), 'Plugins')
-        print '  %s %s' % ('======='.ljust(sep), '=======')
-        for matching_keyword in user_input.matching_static_keyword_list[-1]:
-            print '  %s %s' % (matching_keyword.ljust(sep), ', '.join(user_input.keyword_list[-1].get_sub_keyword(matching_keyword).get_plugins()))
+        if user_input.status is 'dynamic_keyword_conflict':
+            print '  %s %s' % ('Keyword'.ljust(sep), 'Plugins')
+            print '  %s %s' % ('======='.ljust(sep), '=======')
+            for matching_keyword in user_input.matching_static_keyword_list[-1]:
+                print '  %s %s' % (matching_keyword.ljust(sep), ', '.join(user_input.keyword_list[-1].get_sub_keyword(matching_keyword).get_plugins()))
+        elif user_input.status is 'dynamic_keyword_multiple_prefix':
+            print '  %s' % ('Keyword')
+            print '  %s' % ('=======')
+            for matching_keyword in user_input.matching_dyn_keyword_list[-1]:
+                print '  %s' % (matching_keyword.ljust(sep))
 
         print
 
@@ -619,11 +634,11 @@ class _UserInput(object):
                         self.status = 'exec_commands'
 
                         # If the latest keyword entered matches exactly the possibilities, execute only this one
-                        if self.input_keyword_list[-1] in self.matching_static_keyword_list[-1]:
-                            self.matching_static_keyword_list[-1] = [self.input_keyword_list[-1]]
-
                         if self.input_keyword_list[-1] in self.matching_dyn_keyword_list[-1]:
                             self.matching_dyn_keyword_list[-1] = [self.input_keyword_list[-1]]
+
+                        if len(self.matching_dyn_keyword_list[-1]) > 1:
+                            self.status = 'dynamic_keyword_multiple_prefix'
 
                     elif this_keyword.startswith('|'):
                         self.status = 'exec_commands_with_pipe'

@@ -26,6 +26,8 @@ if __name__ == '__main__':
                            help='Turn all possible debugging to on', action='store_true')
     argparser.add_argument('-v', '--verbose', default=False, \
                            help='Increase logging level to INFO', action='store_true')
+    argparser.add_argument('-n', '--disable-name-resolution', default=False, \
+                           help='Disable all name resolution', action='store_true')
     argparser.add_argument('-V', '--version', action='version', \
                            version='%(prog)s ' + '%s' % appinfo.__version__)
 
@@ -86,6 +88,9 @@ if __name__ == '__main__':
     if args.debug:
         sysadmintoolkit.utils.override_config(config, 'log-level', 'debug')
         sysadmintoolkit.utils.override_config(config, 'log-destination', 'console')
+
+    if args.disable_name_resolution:
+        sysadmintoolkit.utils.override_config(config, 'name-resolution', 'no')
 
     # ---- Initialize commandprompt logging
     CommandPromptLogger = sysadmintoolkit.utils.get_logger('commandprompt', dict(config.items('commandprompt')))

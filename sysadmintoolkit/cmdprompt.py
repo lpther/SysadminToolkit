@@ -170,6 +170,9 @@ class CmdPrompt(cmd.Cmd):
         self.logger.debug("  readlinebuff='%s'" % (readline.get_line_buffer()))
         self.logger.debug("  plugin_scope='%s'" % (plugin_scope))
 
+        # This must be here to prevent a leading whitespace in the prompt
+        sys.stdout.write('')
+
         if not self.is_interactive:
             print '%s%s' % (self.prompt, line)
 

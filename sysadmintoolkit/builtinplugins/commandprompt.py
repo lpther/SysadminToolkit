@@ -1,9 +1,12 @@
-__version__ = "0.1.0a"
+__version__ = '0.1.0a'
 
 import sysadmintoolkit
 import signal
 import sys
 import readline
+import docutils.core
+import tempfile
+
 
 global plugin_instance
 
@@ -23,6 +26,26 @@ def get_plugin(logger, config):
 
 class CommandPrompt(sysadmintoolkit.plugin.Plugin):
     '''
+    ====================
+    CommandPrompt Plugin
+    ====================
+
+    Provides basic commands to the sysadmin-toolkit CLI.
+
+    Configuration
+    -------------
+
+    *plugin-dir*
+      Directory where plugins reside. Plugins must be with the .py extension.
+
+      Default: /etc/sysadmin-toolkit/plugin.d/
+
+    *script-dir*
+      Directory where scripts reside. The commandprompt plugin doesn't do anything with this value.
+      Other plugins would use it for indirection if needed.
+
+      Default: /etc/sysadmin-toolkit/scripts.d/
+
     '''
     def __init__(self, logger, config):
         super(CommandPrompt, self).__init__('commandprompt', logger, config)
@@ -38,13 +61,13 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         # use_cmd._Label__is_reserved = True
         # self.add_command(use_cmd)
 
-        # help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
-        # help_help._Label__is_reserved = True
-        # self.add_command(help_help)
+        help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
+        help_help._Label__is_reserved = True
+        self.add_command(help_help)
 
-        # help_cmd = sysadmintoolkit.command.ExecCommand('help <plugin>', self, self.show_plugin_help)
-        # help_cmd._Label__is_reserved = True
-        # self.add_command(help_cmd)
+        help_cmd = sysadmintoolkit.command.ExecCommand('help <plugin>', self, self.show_plugin_help)
+        help_cmd._Label__is_reserved = True
+        self.add_command(help_cmd)
 
         exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
         exit_cmd._Label__is_reserved = True
@@ -58,7 +81,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         # set_cmd._Label__is_reserved = True
         # self.add_command(set_cmd)
 
-        self.add_dynamic_keyword_fn('<plugin>', self.get_plugins_for_use_cmd)
+        self.add_dynamic_keyword_fn('<plugin>', self.get_plugins)
 
         def sigint_handler(signum=None, frame=None):
             global plugin_instance
@@ -166,21 +189,84 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         print
 
-    def get_plugins_for_use_cmd(self, dyn_keyword):
-        plugins = self.cmdstack[-1].get_plugins()
+    # Dynamic keywords
 
-        map_dyn_keyword = {}
+    def get_plugins(self, dyn_keyword):
+        plugins = self.plugin_set.get_plugins()
+
+        map_plugins = {}
 
         for plugin in plugins:
-            map_dyn_keyword[plugin.get_name()] = 'Restrict the scope to %s plugin' % plugin.get_name()
+            map_plugins[plugin] = 'Use %s plugin' % plugin
 
-        return map_dyn_keyword
+        return map_plugins
+
+    # Sysadmin-toolkit commands
 
     def cmd_input_with_scope(self, line, mode):
         print 'cmd input with scope not implemented yet !!'
 
     def show_plugin_help(self, line, mode):
-        print 'show plugin help not implemented yet !!'
+        if len(self.cmdstack):
+            cmdprompt = self.cmdstack[-1]
+        else:
+            self.logger.error('This command must be executed interactively, please execute in the CLI')
+            return
+
+        pluginname = line.split()[1]
+        plugin = self.plugin_set.get_plugins()[pluginname]
+
+        self.logger.debug('Showing help for plugin %s' % pluginname)
+
+        doc_file = tempfile.NamedTemporaryFile()
+
+        plugin_doc = []
+
+        plugin_doc.append(sysadmintoolkit.utils.trim_docstring(plugin.__doc__))
+        plugin_doc.append('')
+
+        labeldict = cmdprompt.command_tree.get_sub_keywords_labels()
+        labelkeys = labeldict.keys()
+        labelkeys.sort()
+
+        plugin_command_doc = []
+        for label in labelkeys:
+            # Build the label part of the debug
+            if len(labeldict[label]['executable_commands']) == 0:
+                continue
+
+            command_help_plugins = labeldict[label]['executable_commands'].keys()
+            command_help_plugins.sort()
+
+            for plugin in command_help_plugins:
+                if plugin == pluginname:
+                    plugin_command_doc.append('*%s*' % label.replace('_', ''))
+                    command_help = labeldict[label]['executable_commands'][plugin].get_help()
+                    plugin_command_doc.append(sysadmintoolkit.utils.indent_text(command_help, indent=2))
+
+        self.logger.debug('Using merged docstrings for plugin %s:\n%s' % (pluginname, '\n'.join(plugin_doc + plugin_command_doc)))
+
+        if len(plugin_command_doc):
+            plugin_doc.append('Plugin Commands')
+            plugin_doc.append('---------------')
+
+        # Man page formatting
+        manpage_format = docutils.core.publish_string('\n'.join(plugin_doc + plugin_command_doc), writer_name='manpage').splitlines()
+
+        if '.SH NAME' in manpage_format[1]:
+            manpage_format[1] = '.SH DESCRIPTION'
+
+        if manpage_format[2].endswith('\\- '):
+            manpage_format[2] = manpage_format[2][:-3]
+
+        manpage_format = '\n'.join(manpage_format)
+
+        doc_file.writelines('%s\n' % manpage_format)
+        doc_file.flush()
+
+        self.logger.debug('Using manpage for plugin %s:\n%s' % (pluginname, manpage_format))
+
+        sysadmintoolkit.utils.execute_interactive_cmd('man %s' % doc_file.name, self.logger)
 
     def exit_last_commandprompt_level(self, line, mode):
         '''

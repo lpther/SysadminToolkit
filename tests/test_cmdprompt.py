@@ -360,7 +360,7 @@ class CmdPromptTestCase(unittest.TestCase):
             p.expect('sysadmin-toolkit# ', timeout=1)
             autocompletion = p.before.split()[1:]
             autocompletion.sort()
-            self.assertEqual(autocompletion, ['conflicting', 'debug', 'dummyplugin', 'exit', 'non', 'quit', 'reset', 'unique', 'universal'])
+            self.assertEqual(autocompletion, ['conflicting', 'debug', 'dummyplugin', 'exit', 'help', 'non', 'quit', 'reset', 'unique', 'universal'])
 
             p.send('uni\t\t')
             p.expect('sysadmin-toolkit# ', timeout=1)

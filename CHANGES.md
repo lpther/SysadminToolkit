@@ -20,6 +20,9 @@
 
 ## CommandPrompt (built-in plugin) ##
 
+**HEAD revision changes**
+- Help command to access plugin's docstrings
+
 **0.1.0a - May 10 2013**
 
 - Initial release

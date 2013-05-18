@@ -73,6 +73,8 @@ Initial release (0.1.0a) features:
 	- Plugins can use dynamic keywords, with full autocompletion and conflict handling support
 - Built-in plugins
 	- commandprompt - for debugging and most built-in commands
+		- help command to display a plugin's main help (written in rST format, presented in manpage format)
+		- debug mode lists all registered commands 
 	- shellcommand - simple label to shell mapping/help
 - Flexible configuration
 	- Any configuration block is passed to plugins

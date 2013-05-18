@@ -19,7 +19,6 @@ Brainstorming about potential improvements
 
 ## CommandPrompt (built-in plugin) ##
 
-- Help command to access plugin's docstrings
 - Scoping to resolve command conflicts, via the 'use' command
 - Multiple mode support: operator -> root, root -> config
 - Clear plugin cache to broadcast a message to all plugins to clear their caches

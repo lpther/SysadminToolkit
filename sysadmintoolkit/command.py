@@ -91,6 +91,14 @@ class ExecCommand(Label):
         else:
             return 'No help available'
 
+    def get_help(self):
+        '''
+        '''
+        if self.function.__doc__ is not None:
+            return sysadmintoolkit.utils.trim_docstring(self.function.__doc__)
+        else:
+            return 'No help available'
+
     def is_conflict_allowed(self):
         '''
         '''

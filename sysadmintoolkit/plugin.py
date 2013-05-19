@@ -108,7 +108,7 @@ class Plugin(object):
 
         return command_list
 
-    def get_dyn_keyword_map(self, dyn_keyword, mode):
+    def get_dyn_keyword_map(self, dyn_keyword, user_input_obj):
         '''
         Returns map of dyn_keyword possibilities/shorthelp by querying
         registered dyn_keyword functions, for the provided mode.
@@ -123,13 +123,15 @@ class Plugin(object):
         labels.
 
         '''
-        self.logger.debug('Dynamic keyword map request for %(dyn_keyword)s in mode %(mode)s' % locals())
+        mode = user_input_obj.get_mode()
 
-        if mode not in self.dyn_keyword_map:
+        self.logger.debug('Dynamic keyword map request for %s in mode %s' % (dyn_keyword, mode))
+
+        if user_input_obj.get_mode() not in self.dyn_keyword_map:
             mode = ''
 
         if dyn_keyword in self.dyn_keyword_map[mode]:
-            return self.dyn_keyword_map[mode][dyn_keyword](dyn_keyword)
+            return self.dyn_keyword_map[mode][dyn_keyword](user_input_obj)
         else:
             return {}
 

@@ -32,7 +32,7 @@ class BadPlugin(DummyPlugin):
         '''Too many arguments needed'''
         self.last_state = 'entered bad function 2, should not be here!'
 
-    def bad_function_3(self, line, mode):
+    def bad_function_3(self, user_input_obj):
         '''Raises some exception'''
         print 'Entered bad function 3 !'
         return 1 / 0
@@ -51,11 +51,11 @@ class BehavedPlugin(DummyPlugin):
 
         self.add_command(command.LabelHelp('this is just a help label', self, 'This label cannot be executed'))
 
-    def behaved_function_1(self, line, mode):
+    def behaved_function_1(self, user_input_obj):
         self.last_state = 'plugin %s behaved function 1' % self.name
         return 12345
 
-    def reset_state(self, line, mode):
+    def reset_state(self, user_input_obj):
         self.last_state = 'init'
 
 
@@ -76,19 +76,19 @@ class BehavedDynamicPlugin(DummyPlugin):
 
         self.dyn_command_line = ''
 
-    def behaved_function_1(self, line, mode):
+    def behaved_function_1(self, user_input_obj):
         self.last_state = 'plugin %s behaved function 1' % self.name
-        self.dyn_command_line = line
+        self.dyn_command_line = user_input_obj.get_entered_command()
         return 12345
 
-    def resolve_dynamic_keyword(self, dyn_keyword):
+    def resolve_dynamic_keyword(self, user_input_obj):
         return {'apple': 'This is a green or red fruit', \
                 'banana': 'This is a yellow fruit', \
                 'apricot': 'This is an orange fruit', \
                 'pineapple': 'This is an orange and yellow fruit', \
                 }
 
-    def reset_state(self, line, mode):
+    def reset_state(self, user_input_obj):
         self.last_state = 'init'
 
 
@@ -109,22 +109,22 @@ class BehavedDynamicPlugin_2(DummyPlugin):
 
         self.dyn_command_line = ''
 
-    def behaved_function_1(self, line, mode):
+    def behaved_function_1(self, user_input_obj):
         self.last_state = 'plugin %s behaved function 1' % self.name
-        self.dyn_command_line = line
+        self.dyn_command_line = user_input_obj.get_entered_command()
         return 12345
 
-    def resolve_dynamic_keyword(self, dyn_keyword):
+    def resolve_dynamic_keyword(self, user_input_obj):
         return {'orange': 'This is a orange fruit', \
                 'banana': 'This is a yellow fruit', \
                 }
 
-    def resolve_dynamic_keyword_2(self, dyn_keyword):
+    def resolve_dynamic_keyword_2(self, user_input_obj):
         return {'potato': 'This is an brownish vegetable', \
                 'carrot': 'This is an orange vegetable', \
                 }
 
-    def reset_state(self, line, mode):
+    def reset_state(self, user_input_obj):
         self.last_state = 'init'
 
 
@@ -144,17 +144,17 @@ class BehavedReadlineFriendlyDynamicPlugin(DummyPlugin):
 
         self.dyn_command_line = ''
 
-    def behaved_function_1(self, line, mode):
+    def behaved_function_1(self, user_input_obj):
         self.last_state = 'plugin %s behaved function 1' % self.name
-        self.dyn_command_line = line
+        self.dyn_command_line = user_input_obj.get_entered_command()
         return 12345
 
-    def resolve_dynamic_keyword(self, dyn_keyword):
+    def resolve_dynamic_keyword(self, user_input_obj):
         return {'apple': 'This is a green or red fruit', \
                 'banana': 'This is a yellow fruit', \
                 'apricot': 'This is an orange fruit', \
                 'pineapple': 'This is an orange and yellow fruit', \
                 }
 
-    def reset_state(self, line, mode):
+    def reset_state(self, user_input_obj):
         self.last_state = 'init'

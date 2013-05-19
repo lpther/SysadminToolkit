@@ -16,3 +16,4 @@ from . import plugin
 from . import utils
 from . import builtinplugins
 from . import cmdprompt
+from . import userinput

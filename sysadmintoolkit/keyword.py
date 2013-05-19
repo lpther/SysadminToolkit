@@ -1,4 +1,5 @@
 import sysadmintoolkit
+import traceback
 
 
 class _Keyword(object):
@@ -102,12 +103,14 @@ class _Keyword(object):
 
         return keywords_dict
 
-    def get_sub_keyword_dyn_keyword_possibilities(self, mode):
+    def get_sub_keyword_dyn_keyword_possibilities(self, user_input_obj):
         '''
         Returns sub keywords's possible dynamic keywords (resolved),
         mapped to the dynamic keyword and related plugins
 
         '''
+        # mode = user_input_obj.get_mode()
+
         possibilities = {}
 
         for sub_keyword_key in self.get_sub_keywords_keys():
@@ -116,7 +119,11 @@ class _Keyword(object):
 
                 for sub_keyword_plugin_key in self.get_sub_keyword(sub_keyword_key).get_plugins():
 
-                    sub_keyword_dyn_keyword_map = self.get_sub_keyword(sub_keyword_key).plugins[sub_keyword_plugin_key].get_dyn_keyword_map(sub_keyword_key, mode)
+                    try:
+                        sub_keyword_dyn_keyword_map = self.get_sub_keyword(sub_keyword_key).plugins[sub_keyword_plugin_key].get_dyn_keyword_map(sub_keyword_key, user_input_obj)
+                    except:
+                        self.logger.error('Error getting dynamic keyword for plugin %s' % sub_keyword_plugin_key)
+                        self.logger.debug(traceback.format_exc())
 
                     for possibility in sub_keyword_dyn_keyword_map:
 

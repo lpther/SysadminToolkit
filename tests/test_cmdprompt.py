@@ -345,9 +345,9 @@ class CmdPromptTestCase(unittest.TestCase):
 
         cmd.preloop()
 
-        self.assertTrue('exec_commands' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command', cmd).status)
-        self.assertTrue('exec_commands_with_pipe' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).status)
-        self.assertTrue('some shell command' in sysadmintoolkit.cmdprompt._UserInput('unique behavedplugin1 command | some shell command', cmd).rest_of_line)
+        self.assertTrue('exec_commands' in sysadmintoolkit.userinput.UserInput('unique behavedplugin1 command', cmd).status)
+        self.assertTrue('exec_commands_with_pipe' in sysadmintoolkit.userinput.UserInput('unique behavedplugin1 command | some shell command', cmd).status)
+        self.assertTrue('some shell command' in sysadmintoolkit.userinput.UserInput('unique behavedplugin1 command | some shell command', cmd).rest_of_line)
 
     def test_interactive_auto_completion(self):
         p = pexpect.spawn('tests/interactive/sysadmin-toolkit')

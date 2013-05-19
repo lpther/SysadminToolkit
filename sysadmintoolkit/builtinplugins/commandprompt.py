@@ -92,7 +92,21 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         signal.signal(signal.SIGINT, sigint_handler)
 
-    def debug(self, line, mode):
+    # Dynamic keywords
+
+    def get_plugins(self, user_input_obj):
+        plugins = self.plugin_set.get_plugins()
+
+        map_plugins = {}
+
+        for plugin in plugins:
+            map_plugins[plugin] = 'Use %s plugin' % plugin
+
+        return map_plugins
+
+    # Sysadmin-toolkit commands
+
+    def debug(self, user_input_obj):
         '''
         Displays registered commands in the current Command Prompt
         '''
@@ -189,31 +203,17 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         print
 
-    # Dynamic keywords
-
-    def get_plugins(self, dyn_keyword):
-        plugins = self.plugin_set.get_plugins()
-
-        map_plugins = {}
-
-        for plugin in plugins:
-            map_plugins[plugin] = 'Use %s plugin' % plugin
-
-        return map_plugins
-
-    # Sysadmin-toolkit commands
-
-    def cmd_input_with_scope(self, line, mode):
+    def cmd_input_with_scope(self, user_input_obj):
         print 'cmd input with scope not implemented yet !!'
 
-    def show_plugin_help(self, line, mode):
+    def show_plugin_help(self, user_input_obj):
         if len(self.cmdstack):
             cmdprompt = self.cmdstack[-1]
         else:
             self.logger.error('This command must be executed interactively, please execute in the CLI')
             return
 
-        pluginname = line.split()[1]
+        pluginname = user_input_obj.get_entered_command().split()[1]
         plugin = self.plugin_set.get_plugins()[pluginname]
 
         self.logger.debug('Showing help for plugin %s' % pluginname)
@@ -268,17 +268,17 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         sysadmintoolkit.utils.execute_interactive_cmd('man %s' % doc_file.name, self.logger)
 
-    def exit_last_commandprompt_level(self, line, mode):
+    def exit_last_commandprompt_level(self, user_input_obj):
         '''
         Exit the current command prompt
         '''
         return sysadmintoolkit.cmdprompt.EXIT_THIS_CMDPROMPT
 
-    def exit_all_commandprompt_levels(self, line, mode):
+    def exit_all_commandprompt_levels(self, user_input_obj):
         '''
         Exit the program
         '''
         return sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT
 
-    def change_global_config(self, line, mode):
+    def change_global_config(self, user_input_obj):
         print 'change global config not implemented yet !!'

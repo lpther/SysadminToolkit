@@ -84,7 +84,7 @@ class CmdPrompt(cmd.Cmd):
         return keyword.startswith('<') and keyword.endswith('>')
 
     def __init__(self, logger, completekey='tab', stdin=None, stdout=None,
-                 mode="generic", prompt='sysadmin-toolkit# ',
+                 mode="generic", baseprompt='sysadmin-toolkit',
                  shell_allowed=False, is_interactive=True):
         '''
         '''
@@ -124,7 +124,8 @@ class CmdPrompt(cmd.Cmd):
 
         self.shell_allowed = shell_allowed
 
-        self.prompt = prompt
+        self.baseprompt = baseprompt
+        self.prompt = '%s(%s)# ' % (self.baseprompt, mode)
 
         self.is_interactive = is_interactive
 

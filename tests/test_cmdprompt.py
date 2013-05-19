@@ -352,18 +352,18 @@ class CmdPromptTestCase(unittest.TestCase):
     def test_interactive_auto_completion(self):
         p = pexpect.spawn('tests/interactive/sysadmin-toolkit')
 
-        p.expect('sysadmin-toolkit# ', timeout=2)
+        p.expect('sysadmin-toolkit\(\w+\)# ', timeout=2)
 
         try:
             # Tests the tab autocompletion, update as built-in commands list grows
             p.send('\t\t')
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
             autocompletion = p.before.split()[1:]
             autocompletion.sort()
             self.assertEqual(autocompletion, ['conflicting', 'debug', 'dummyplugin', 'exit', 'help', 'non', 'quit', 'reset', 'unique', 'universal'])
 
             p.send('uni\t\t')
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
             autocompletion = p.before.split()[1:]
             autocompletion.sort()
             self.assertEqual(autocompletion, ['unique', 'universal'])
@@ -373,39 +373,39 @@ class CmdPromptTestCase(unittest.TestCase):
             self.assertEqual(p.expect('unique ', timeout=1), 0)
             p.sendcontrol('u')
             p.sendline()
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
 
             p.send('unique\t\t')
             p.expect('unique ', timeout=2)
             self.assertEqual(p.expect('plugin', timeout=2), 0)
             p.sendcontrol('u')
             p.sendline()
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
 
             p.send('unique plugin1 ap\t\t')
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
             autocompletion = p.before.split()[3:]
             autocompletion.sort()
             self.assertEqual(autocompletion, ['apple', 'apricot'])
             p.sendcontrol('u')
             p.sendline()
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
 
             p.send('uniq plugin1 ap\t\t')
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
             autocompletion = p.before.split()[3:]
             autocompletion.sort()
             self.assertEqual(autocompletion, ['apple', 'apricot'])
             p.sendcontrol('u')
             p.sendline()
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
 
             p.send('uniqwerty plugin1 ap\t\t')
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
             self.assertTrue('No matching command found' in p.before)
             p.sendcontrol('u')
             p.sendline()
-            p.expect('sysadmin-toolkit# ', timeout=1)
+            p.expect('sysadmin-toolkit\(\w+\)# ', timeout=1)
 
         finally:
             p.sendcontrol('u')

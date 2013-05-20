@@ -59,7 +59,7 @@ class ExecCommand(Label):
     '''
     '''
 
-    def __init__(self, label, plugin, function, allow_conflict=False):
+    def __init__(self, label, plugin, function, allow_conflict=False, shorthelp=None, longhelp=None):
         '''
         function     method   A method defined in the calling plugin.
                               def function(self, line, mode)
@@ -76,6 +76,22 @@ class ExecCommand(Label):
         else:
             raise sysadmintoolkit.exception.PluginError('Error initializing command : Command instance requires a bound method (3rd arg) for label "%s"' % label, errno=303)
 
+        self.shorthelp = 'No help available'
+        if shorthelp is not None:
+            self.shorthelp = shorthelp
+        else:
+            if self.function.__doc__ is not None and self.function.__doc__.strip() is not '':
+                self.shorthelp = self.function.__doc__.strip().splitlines()[0]
+
+        self.longhelp = self.shorthelp
+        if longhelp is not None:
+            self.longhelp = longhelp
+        else:
+            if self.function.__doc__ is not None and self.function.__doc__.strip() is not '':
+                self.help = '\n'.join(sysadmintoolkit.utils.trim_docstring(self.function.__doc__).splitlines()[1:])
+            else:
+                self.help = 'No help available'
+
         self.allow_conflict = allow_conflict
 
     def get_function(self):
@@ -86,18 +102,12 @@ class ExecCommand(Label):
     def get_shorthelp(self):
         '''
         '''
-        if self.function.__doc__ is not None:
-            return self.function.__doc__.strip().splitlines()[0]
-        else:
-            return 'No help available'
+        return self.shorthelp
 
     def get_help(self):
         '''
         '''
-        if self.function.__doc__ is not None:
-            return sysadmintoolkit.utils.trim_docstring(self.function.__doc__)
-        else:
-            return 'No help available'
+        return self.longhelp
 
     def is_conflict_allowed(self):
         '''

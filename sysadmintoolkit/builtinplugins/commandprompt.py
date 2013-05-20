@@ -26,9 +26,8 @@ def get_plugin(logger, config):
 
 class CommandPrompt(sysadmintoolkit.plugin.Plugin):
     '''
-    ====================
-    CommandPrompt Plugin
-    ====================
+    Description
+    -----------
 
     Provides basic commands to the sysadmin-toolkit CLI.
 
@@ -42,13 +41,14 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
     *script-dir*
       Directory where scripts reside. The commandprompt plugin doesn't do anything with this value.
+
       Other plugins would use it for indirection if needed.
 
       Default: /etc/sysadmin-toolkit/scripts.d/
 
     '''
     def __init__(self, logger, config):
-        super(CommandPrompt, self).__init__('commandprompt', logger, config)
+        super(CommandPrompt, self).__init__('commandprompt', logger, config, version=__version__)
 
         self.add_command(sysadmintoolkit.command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(sysadmintoolkit.command.ExecCommand('debug commandprompt', self, self.debug))
@@ -92,6 +92,63 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         signal.signal(signal.SIGINT, sigint_handler)
 
+    def get_plugin_documentation(self, plugin):
+        pluginname = plugin.get_name()
+
+        plugin_doc_header = []
+
+        plugin_doc_header.append(sysadmintoolkit.utils.trim_docstring(plugin.get_doc_header()))
+        plugin_doc_header.append('')
+
+        plugin_method_map = {}
+
+        for mode in plugin.label_map:
+            modename = mode
+
+            if mode is '':
+                modename = 'default'
+
+            for label in plugin.label_map[mode]:
+                command = plugin.label_map[mode][label]
+                if not isinstance(command, sysadmintoolkit.command.ExecCommand):
+                    continue
+
+                method = command.get_function()
+
+                if method not in plugin_method_map:
+                    plugin_method_map[method] = {'longhelp': command.get_help(), 'shorthelp': command.get_shorthelp(), 'labels': {}}
+
+                if label not in plugin_method_map[method]['labels']:
+                    plugin_method_map[method]['labels'][label] = []
+
+                plugin_method_map[method]['labels'][label].append(modename)
+                plugin_method_map[method]['labels'][label].sort()
+
+        plugin_command_doc = []
+        for method in plugin_method_map:
+            method_dict = plugin_method_map[method]
+
+            label_keys = method_dict['labels'].keys()
+            label_keys.sort()
+
+            for label in label_keys:
+                plugin_command_doc.append('*%s* (%s)' % (label, ','.join(method_dict['labels'][label])))
+                plugin_command_doc.append(sysadmintoolkit.utils.indent_text(method_dict['longhelp'], indent=2))
+
+        if len(plugin_command_doc):
+            plugin_doc_header.append('Plugin Commands')
+            plugin_doc_header.append('---------------')
+
+        plugin_doc_footer = []
+        plugin_doc_footer.append(plugin.get_doc_footer())
+        plugin_doc_footer.append('')
+
+        plugin_doc = '\n'.join(plugin_doc_header + plugin_command_doc + plugin_doc_footer)
+
+        self.logger.debug('Using merged docstrings for plugin %s:\n%s' % (pluginname, plugin_doc))
+
+        return plugin_doc
+
     # Dynamic keywords
 
     def get_plugins(self, user_input_obj):
@@ -108,7 +165,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
     def debug(self, user_input_obj):
         '''
-        Displays registered commands in the current Command Prompt
+        Display registered commands in the current Command Prompt
         '''
         if len(self.cmdstack):
             cmdprompt = self.cmdstack[-1]
@@ -207,54 +264,34 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         print 'cmd input with scope not implemented yet !!'
 
     def show_plugin_help(self, user_input_obj):
-        if len(self.cmdstack):
-            cmdprompt = self.cmdstack[-1]
-        else:
-            self.logger.error('This command must be executed interactively, please execute in the CLI')
-            return
+        '''
+        Display man page for this plugin
 
+        '''
         pluginname = user_input_obj.get_entered_command().split()[1]
         plugin = self.plugin_set.get_plugins()[pluginname]
 
         self.logger.debug('Showing help for plugin %s' % pluginname)
 
+        plugin_doc = self.get_plugin_documentation(plugin)
+
+        plugin_doc_manpage_header = sysadmintoolkit.utils.trim_docstring("""
+        %s=======
+        %s Plugin
+        %s=======
+        """ % ('=' * len(pluginname), pluginname, '=' * len(pluginname)))
+
+        self.logger.debug('Adding header for manpage:\n%s' % plugin_doc_manpage_header)
+
         doc_file = tempfile.NamedTemporaryFile()
 
-        plugin_doc = []
-
-        plugin_doc.append(sysadmintoolkit.utils.trim_docstring(plugin.__doc__))
-        plugin_doc.append('')
-
-        labeldict = cmdprompt.command_tree.get_sub_keywords_labels()
-        labelkeys = labeldict.keys()
-        labelkeys.sort()
-
-        plugin_command_doc = []
-        for label in labelkeys:
-            # Build the label part of the debug
-            if len(labeldict[label]['executable_commands']) == 0:
-                continue
-
-            command_help_plugins = labeldict[label]['executable_commands'].keys()
-            command_help_plugins.sort()
-
-            for plugin in command_help_plugins:
-                if plugin == pluginname:
-                    plugin_command_doc.append('*%s*' % label.replace('_', ''))
-                    command_help = labeldict[label]['executable_commands'][plugin].get_help()
-                    plugin_command_doc.append(sysadmintoolkit.utils.indent_text(command_help, indent=2))
-
-        self.logger.debug('Using merged docstrings for plugin %s:\n%s' % (pluginname, '\n'.join(plugin_doc + plugin_command_doc)))
-
-        if len(plugin_command_doc):
-            plugin_doc.append('Plugin Commands')
-            plugin_doc.append('---------------')
-
         # Man page formatting
-        manpage_format = docutils.core.publish_string('\n'.join(plugin_doc + plugin_command_doc), writer_name='manpage').splitlines()
+        manpage_format = docutils.core.publish_string('%s' % (plugin_doc), writer_name='manpage').splitlines()
+
+        manpage_format[0] = '.TH %s COMMANDS "%s" "SYSADMIN-TOOLKIT PLUGIN" ""' % (plugin.get_name().upper(), plugin.get_version())
 
         if '.SH NAME' in manpage_format[1]:
-            manpage_format[1] = '.SH DESCRIPTION'
+            manpage_format[1] = ''
 
         if manpage_format[2].endswith('\\- '):
             manpage_format[2] = manpage_format[2][:-3]
@@ -271,12 +308,14 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
     def exit_last_commandprompt_level(self, user_input_obj):
         '''
         Exit the current command prompt
+
         '''
         return sysadmintoolkit.cmdprompt.EXIT_THIS_CMDPROMPT
 
     def exit_all_commandprompt_levels(self, user_input_obj):
         '''
         Exit the program
+
         '''
         return sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT
 

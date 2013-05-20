@@ -59,10 +59,10 @@ class ShellCommand(sysadmintoolkit.plugin.Plugin):
                     self.logger.error('Invalid label for shellcommand %s: %s' % (attr, e))
 
         for label in self.shellcommands:
-            def label_function(self, line, mode):
-                self.logger.info('Executing shell command: %s' % self.shellcommands[line]['cmd'])
+            def label_function(self, user_input_obj):
+                self.logger.info('Executing shell command: %s' % self.shellcommands[user_input_obj.get_entered_command()]['cmd'])
 
-                return subprocess.call(self.shellcommands[line]['cmd'], shell=True)
+                return subprocess.call(self.shellcommands[user_input_obj.get_entered_command()]['cmd'], shell=True)
 
             label_function.__doc__ = self.shellcommands[label]['shorthelp']
 

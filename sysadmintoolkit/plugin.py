@@ -6,7 +6,8 @@ import logging
 class Plugin(object):
     '''
     '''
-    def __init__(self, name, logger, config):
+
+    def __init__(self, name, logger, config, version='Unspecified version'):
         '''
         '''
         if isinstance(name, str):
@@ -31,6 +32,24 @@ class Plugin(object):
         self.config = config
 
         self.plugin_set = {}
+
+        if self.__doc__ is None or self.__doc__.strip() is '':
+            self.doc_header = ''
+        else:
+            self.doc_header = self.__doc__
+
+        self.doc_footer = ''
+
+        self.version = version
+
+    def get_doc_header(self):
+        return self.doc_header
+
+    def get_doc_footer(self):
+        return self.doc_footer
+
+    def get_version(self):
+        return self.version
 
     def add_command(self, command, modes=[]):
         '''

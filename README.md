@@ -20,6 +20,7 @@ If you are a python coder, even a beginner, you could code your own plugin to us
 SysadminToolkit is coded for python 2.7 on Ubuntu 12.04, and requires the following packages:
 
 - argparse
+- docutils
 - Pyparsing ([http://pyparsing.wikispaces.com/](http://pyparsing.wikispaces.com/))
 
 *Installation details to follow*

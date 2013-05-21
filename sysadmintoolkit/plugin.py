@@ -26,15 +26,18 @@ class Plugin(object):
         # Plugin's function to label and mode mapping
         # labelmap[mode] = {}
         # labelmap[mode][label] = function
-        self.label_map = { '' : {} }
-        self.dyn_keyword_map = { '': {} }
+        self.label_map = collections.OrderedDict()
+        self.label_map[''] = collections.OrderedDict()
+
+        self.dyn_keyword_map = collections.OrderedDict()
+        self.dyn_keyword_map[''] = collections.OrderedDict()
 
         self.config = config
 
         self.plugin_set = {}
 
         if self.__doc__ is None or self.__doc__.strip() is '':
-            self.doc_header = ''
+            self.doc_header = 'No main documentation is available'
         else:
             self.doc_header = self.__doc__
 

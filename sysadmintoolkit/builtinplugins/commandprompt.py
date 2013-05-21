@@ -6,6 +6,7 @@ import sys
 import readline
 import docutils.core
 import tempfile
+import collections
 
 
 global plugin_instance
@@ -100,7 +101,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         plugin_doc_header.append(sysadmintoolkit.utils.trim_docstring(plugin.get_doc_header()))
         plugin_doc_header.append('')
 
-        plugin_method_map = {}
+        plugin_method_map = collections.OrderedDict()
 
         for mode in plugin.label_map:
             modename = mode
@@ -125,15 +126,30 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
                 plugin_method_map[method]['labels'][label].sort()
 
         plugin_command_doc = []
-        for method in plugin_method_map:
+
+        plugin_method_map_keys = plugin_method_map.keys()
+        for method in plugin_method_map_keys:
             method_dict = plugin_method_map[method]
 
             label_keys = method_dict['labels'].keys()
             label_keys.sort()
 
+            plugin_command_doc.append('| ')
+
             for label in label_keys:
-                plugin_command_doc.append('*%s* (%s)' % (label, ','.join(method_dict['labels'][label])))
-                plugin_command_doc.append(sysadmintoolkit.utils.indent_text(method_dict['longhelp'], indent=2))
+                plugin_command_doc.append('| *%s* (%s)' % (label, ','.join(method_dict['labels'][label])))
+
+                if label is label_keys[-1]:
+                    plugin_command_doc.append('| ')
+
+            plugin_command_doc.append('')
+
+            plugin_command_doc.append(sysadmintoolkit.utils.indent_text(method_dict['longhelp'], indent=2))
+
+            if method is not plugin_method_map_keys[-1]:
+                plugin_command_doc.append('')
+                plugin_command_doc.append('----')
+                plugin_command_doc.append('')
 
         if len(plugin_command_doc):
             plugin_doc_header.append('Plugin Commands')

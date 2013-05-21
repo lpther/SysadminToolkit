@@ -126,6 +126,9 @@ class CmdPrompt(cmd.Cmd):
         self.baseprompt = baseprompt
         self.prompt = '%s(%s)# ' % (self.baseprompt, mode)
 
+        self.completion_user_input = None
+        self.last_return_code = 0
+
         self.is_interactive = is_interactive
 
     def add_plugin(self, plugin):
@@ -189,7 +192,7 @@ class CmdPrompt(cmd.Cmd):
             keys = executable_commands.keys()
             keys.sort()
 
-            last_return_code = 401
+            self.last_return_code = 401
 
             # Redirect output to a new process
             if user_input.status is 'exec_commands_with_pipe':
@@ -205,10 +208,10 @@ class CmdPrompt(cmd.Cmd):
                         print ' ***** Executing command from %s *****' % executable_commands[keycmd].get_plugin().get_name()
 
                     # last_return_code = executable_commands[keycmd].get_function()(self.merge_keywords(user_input.get_entered_command()), self.mode)
-                    last_return_code = executable_commands[keycmd].get_function()(user_input)
+                    self.last_return_code = executable_commands[keycmd].get_function()(user_input)
 
-                    if last_return_code is None:
-                        last_return_code = 0
+                    if self.last_return_code is None:
+                        self.last_return_code = 0
 
                 except Exception as e:
                     self.logger.error('Error executing label %s with plugin %s in mode %s:\n%s' % \
@@ -219,10 +222,10 @@ class CmdPrompt(cmd.Cmd):
                     self.logger.debug(traceback.format_exc())
 
                 try:
-                    if last_return_code is None:
-                        last_return_code = 0
+                    if self.last_return_code is None:
+                        self.last_return_code = 0
                     else:
-                        last_return_code = int(last_return_code)
+                        self.last_return_code = int(self.last_return_code)
                 except:
                     self.logger.warning('Plugin %s, label "%s" returned an invalid value' % \
                                         (' '.join([user_input.matching_static_keyword_list[i][0] for i in range(len(user_input.matching_static_keyword_list))]), \
@@ -234,18 +237,18 @@ class CmdPrompt(cmd.Cmd):
                 sys.stdout = sys.__stdout__
 
         else:
-            last_return_code = self.print_error_on_user_input(user_input)
+            self.last_return_code = self.print_error_on_user_input(user_input)
 
         # This must be here to prevent a leading whitespace in the prompt
         sys.stdout.write('')
 
         if not self.is_interactive:
-            return last_return_code
+            return self.last_return_code
         else:
-            if last_return_code is EXIT_THIS_CMDPROMPT:
+            if self.last_return_code is EXIT_THIS_CMDPROMPT:
                 self.logger.debug('Command Prompt exiting mode %s' % self.mode)
                 return EXIT_THIS_CMDPROMPT
-            elif last_return_code is EXIT_ALL_CMDPROMPT:
+            elif self.last_return_code is EXIT_ALL_CMDPROMPT:
                 self.logger.debug('Command Prompt exiting program (mode %s)' % self.mode)
                 return EXIT_ALL_CMDPROMPT
             else:

@@ -84,6 +84,9 @@ class UserInput(object):
     def get_static_keyword_list(self):
         return self.matching_static_keyword_list
 
+    def get_cmdprompt(self):
+        return self.cmdprompt
+
     def _analyze_cmd(self):
         self.cmdprompt.logger.debug('Line analysis started for line "%s" in mode %s (scope is %s)' % \
                                      (self.rawcmd, self.cmdprompt.mode, self.scope))

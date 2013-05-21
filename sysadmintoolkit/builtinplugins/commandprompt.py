@@ -12,15 +12,19 @@ import collections
 global plugin_instance
 
 plugin_instance = None
+modes_graph = collections.OrderedDict()
+modes_graph['root'] = {'next_modes': ['config', 'operator'], 'desc': 'Display system properties, most commands require superuser privilege'}
+modes_graph['config'] = {'next_modes': [], 'desc': 'Change system configuration'}
+modes_graph['operator'] = {'next_modes': [], 'desc': 'View basic system properties'}
 
 
 def get_plugin(logger, config):
     '''
     '''
-    global plugin_instance
+    global plugin_instance, modes_graph
 
     if plugin_instance is None:
-        plugin_instance = CommandPrompt(logger, config)
+        plugin_instance = CommandPrompt(logger, config, modes_graph)
 
     return plugin_instance
 
@@ -48,8 +52,10 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
       Default: /etc/sysadmin-toolkit/scripts.d/
 
     '''
-    def __init__(self, logger, config):
+    def __init__(self, logger, config, modes_graph):
         super(CommandPrompt, self).__init__('commandprompt', logger, config, version=__version__)
+
+        self.modes_graph = modes_graph
 
         self.add_command(sysadmintoolkit.command.LabelHelp('debug', self, 'Debug plugins'))
         self.add_command(sysadmintoolkit.command.ExecCommand('debug commandprompt', self, self.debug))
@@ -61,6 +67,14 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         # use_cmd = sysadmintoolkit.command.ExecCommand('use <plugin> <*>', self, self.cmd_input_with_scope)
         # use_cmd._Label__is_reserved = True
         # self.add_command(use_cmd)
+
+        switchmode_help = sysadmintoolkit.command.LabelHelp('switchmode', self, 'Change the command prompt mode')
+        switchmode_help._Label__is_reserved = True
+        self.add_command(switchmode_help)
+
+        switchmode_cmd = sysadmintoolkit.command.ExecCommand('switchmode <mode>', self, self.change_mode)
+        switchmode_cmd._Label__is_reserved = True
+        self.add_command(switchmode_cmd)
 
         help_help = sysadmintoolkit.command.LabelHelp('help', self, 'Displays plugin help page')
         help_help._Label__is_reserved = True
@@ -83,6 +97,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         # self.add_command(set_cmd)
 
         self.add_dynamic_keyword_fn('<plugin>', self.get_plugins)
+        self.add_dynamic_keyword_fn('<mode>', self.get_modes)
 
         def sigint_handler(signum=None, frame=None):
             global plugin_instance
@@ -176,6 +191,16 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
             map_plugins[plugin] = 'Use %s plugin' % plugin
 
         return map_plugins
+
+    def get_modes(self, user_input_obj):
+        current_mode = user_input_obj.get_mode()
+
+        map_modes = {}
+
+        for next_mode in self.modes_graph[current_mode]['next_modes']:
+            map_modes[next_mode] = self.modes_graph[current_mode]['desc']
+
+        return map_modes
 
     # Sysadmin-toolkit commands
 
@@ -276,8 +301,22 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         print
 
-    def cmd_input_with_scope(self, user_input_obj):
-        print 'cmd input with scope not implemented yet !!'
+        print '  Available modes'
+        print '  ==============='
+        print
+
+        for mode in self.modes_graph:
+            print '    %s %s' % (('%s:' % mode).ljust(20), self.modes_graph[mode]['desc'])
+            print
+
+            if len(self.modes_graph[mode]['next_modes']):
+                print '    %s Next modes: %s' % (' ' * len(('%s:' % mode).ljust(20)), ', '.join(self.modes_graph[mode]['next_modes']))
+            else:
+                print '    %s Next modes: None' % (' ' * len(('%s:' % mode).ljust(20)))
+
+            print
+
+        print
 
     def show_plugin_help(self, user_input_obj):
         '''
@@ -335,5 +374,44 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         '''
         return sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT
 
-    def change_global_config(self, user_input_obj):
-        print 'change global config not implemented yet !!'
+    def change_mode(self, user_input_obj):
+        '''
+        Change the current command prompt mode
+
+        '''
+        newmode = user_input_obj.get_entered_command().split()[-1]
+        old_commandprompt = user_input_obj.get_cmdprompt()
+
+        self.logger.debug('Changing mode from %s to %s' % (user_input_obj.get_mode(), newmode))
+
+        newmode_commandprompt = sysadmintoolkit.cmdprompt.CmdPrompt(old_commandprompt.logger, mode=newmode, \
+                                                         shell_allowed=old_commandprompt.shell_allowed, \
+                                                         is_interactive=old_commandprompt.is_interactive)
+
+        def SIGWINCH_handler(signum=None, frame=None):
+            (height, width) = sysadmintoolkit.utils.get_terminal_size()
+            newmode_commandprompt.update_window_size(width, height)
+
+        old_sigwinch_handler = signal.signal(signal.SIGWINCH, SIGWINCH_handler)
+        SIGWINCH_handler()
+
+        for plugin in old_commandprompt.get_plugins():
+            newmode_commandprompt.add_plugin(plugin)
+
+        self.logger.debug('Entering cmdloop for command prompt in mode %s' % newmode)
+
+        newmode_commandprompt.cmdloop()
+
+        return_code = newmode_commandprompt.last_return_code
+
+        if return_code is sysadmintoolkit.cmdprompt.EXIT_THIS_CMDPROMPT:
+            self.logger.debug('Command prompt in mode %s exited' % newmode)
+            return_code = 0
+        elif return_code is sysadmintoolkit.cmdprompt.EXIT_ALL_CMDPROMPT:
+            self.logger.debug('Command prompt in mode %s asked for a program exit' % newmode)
+        else:
+            self.logger.debug('Command prompt in mode %s exited with code %s' % (newmode, return_code))
+
+        signal.signal(signal.SIGWINCH, old_sigwinch_handler)
+
+        return return_code

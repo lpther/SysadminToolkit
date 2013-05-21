@@ -8,18 +8,18 @@ Brainstorming about potential improvements
 - Code documentation
 - Add more unit testing
     - Badly behaving dynamic keyword fn
-    - Prefix conflict with dynamic keyord
+    - Prefix conflict with dynamic keyword
 
 ## Functionality ##
 
 - Contextual help via '?'
 - External command call via '!'
-- ctrl-C to quit the program (requires flushing readline's buffer and quitting)
+- ctrl-C to quit the program, requires flushing readline's buffer and quitting (dragons ahead)
 - 'enable-plugin=no' in the config to prevent from loading a module without erasing the configuration
 
 ## CommandPrompt (built-in plugin) ##
 
-- Scoping to resolve command conflicts, via the 'use' command
+- Scoping to resolve command conflicts, via the 'use' command (dragons ahead)
 - Multiple mode support: operator -> root, root -> config
 - Clear plugin cache to broadcast a message to all plugins to clear their caches
 

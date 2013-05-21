@@ -85,7 +85,7 @@ Initial release (0.1.0a) features:
 
 ## Related projects ##
 
-Code plugins that leverage the toolkit for advanced features (why this project started in the first place)
+Plugins that leverage the toolkit for advanced features (why this project started in the first place)
 
 - clustering - basic cluster management features
 - lvs/keepalived - linux virtual server and keepalived for an any-node load balancing cluster

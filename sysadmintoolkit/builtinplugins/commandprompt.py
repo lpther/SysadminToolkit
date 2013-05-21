@@ -137,7 +137,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
             plugin_command_doc.append('| ')
 
             for label in label_keys:
-                plugin_command_doc.append('| *%s* (%s)' % (label, ','.join(method_dict['labels'][label])))
+                plugin_command_doc.append('| *%s* (%s)' % (label, ', '.join(method_dict['labels'][label])))
 
                 if label is label_keys[-1]:
                     plugin_command_doc.append('| ')

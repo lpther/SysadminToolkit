@@ -68,7 +68,10 @@ class Plugin(object):
                 modes = ['']
 
             for mode in modes:
-                if isinstance(mode, str):
+                if isinstance(mode, basestring):
+                    if mode not in self.label_map:
+                        self.label_map[mode] = collections.OrderedDict()
+
                     self.label_map[mode][command.get_label()] = command
                 else:
                     raise sysadmintoolkit.exception.PluginError('Error adding label : Wrong mode type', errno=401)
@@ -98,7 +101,10 @@ class Plugin(object):
                 modes = ['']
 
             for mode in modes:
-                if isinstance(mode, str):
+                if isinstance(mode, basestring):
+                    if mode not in self.dyn_keyword_map:
+                        self.dyn_keyword_map[mode] = collections.OrderedDict()
+
                     self.dyn_keyword_map[mode][dyn_keyword] = fn
                 else:
                     raise sysadmintoolkit.exception.PluginError('Error adding dynamic keyword in plugin %s : Wrong mode type' \

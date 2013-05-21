@@ -143,13 +143,16 @@ class CmdPrompt(cmd.Cmd):
 
         # Add plugin's commands for current mode
         for command in plugin.get_commands(self.mode):
-            self.register_command(command, CmdPrompt.split_label(command.get_label()))
+            self.register_command(command)
 
         for command in plugin.get_commands(''):
             self.register_command(command)
 
     def get_plugins(self):
         return self.plugins
+
+    def get_mode(self):
+        return self.mode
 
     def register_command(self, command):
         '''

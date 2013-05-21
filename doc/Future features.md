@@ -9,6 +9,7 @@ Brainstorming about potential improvements
 - Add more unit testing
     - Badly behaving dynamic keyword fn
     - Prefix conflict with dynamic keyword
+    - Multiple modes support
 
 ## Functionality ##
 

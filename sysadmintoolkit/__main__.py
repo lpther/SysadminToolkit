@@ -129,6 +129,9 @@ if __name__ == '__main__':
         initial_cmdprompt.preloop()
 
         for cmd in ' '.join(args.cmd).split(';'):
-            initial_cmdprompt.onecmd(cmd)
+            plugin_set.get_plugins()['commandprompt'].cmdstack[-1].onecmd(cmd)
 
-        initial_cmdprompt.postloop()
+        cmdprompts = plugin_set.get_plugins()['commandprompt'].cmdstack[:]
+        cmdprompts.reverse()
+        for cmdprompt in cmdprompts:
+            cmdprompt.postloop()

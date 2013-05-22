@@ -400,7 +400,11 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         self.logger.debug('Entering cmdloop for command prompt in mode %s' % newmode)
 
-        newmode_commandprompt.cmdloop()
+        if old_commandprompt.is_interactive:
+            newmode_commandprompt.cmdloop()
+        else:
+            newmode_commandprompt.preloop()
+            return 0
 
         return_code = newmode_commandprompt.last_return_code
 
@@ -413,8 +417,5 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
             self.logger.debug('Command prompt in mode %s exited with code %s' % (newmode, return_code))
 
         signal.signal(signal.SIGWINCH, old_sigwinch_handler)
-
-        for plugin in self.plugin_set.get_plugins():
-            self.plugin_set.get_plugins()[plugin].clear_cache()
 
         return return_code

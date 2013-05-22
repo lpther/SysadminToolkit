@@ -185,7 +185,7 @@ class Plugin(object):
     def clear_cache(self):
         '''
         '''
-        return
+        self.logger.debug('Received a clear cache request')
 
     def update_plugin_set(self, plugin_set):
         self.plugin_set = plugin_set

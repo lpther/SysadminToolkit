@@ -376,7 +376,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
     def change_mode(self, user_input_obj):
         '''
-        Change the current command prompt mode
+        Change the command prompt mode
 
         '''
         newmode = user_input_obj.get_entered_command().split()[-1]
@@ -413,5 +413,8 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
             self.logger.debug('Command prompt in mode %s exited with code %s' % (newmode, return_code))
 
         signal.signal(signal.SIGWINCH, old_sigwinch_handler)
+
+        for plugin in self.plugin_set.get_plugins():
+            self.plugin_set.get_plugins()[plugin].clear_cache()
 
         return return_code

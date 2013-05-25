@@ -4,8 +4,8 @@ from __future__ import absolute_import
 sysadmin-toolkit - Easily create CLIs from your many and specialized scripts and tools
 '''
 
-__version__ = '0.1.0a'
-__license__ = 'TBD'
+__version__ = '0.1.0b'
+__license__ = 'MIT'
 __author__ = 'Louis-Philippe Theriault'
 
 # import cmdprompt

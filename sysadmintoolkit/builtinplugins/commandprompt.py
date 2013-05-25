@@ -1,4 +1,4 @@
-__version__ = '0.1.0a'
+__version__ = '0.1.0b'
 
 import sysadmintoolkit
 import signal

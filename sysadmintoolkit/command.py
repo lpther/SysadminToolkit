@@ -88,7 +88,7 @@ class ExecCommand(Label):
             self.longhelp = longhelp
         else:
             if self.function.__doc__ is not None and self.function.__doc__.strip() is not '':
-                self.longhelp = '\n'.join(sysadmintoolkit.utils.trim_docstring(self.function.__doc__).splitlines()[1:])
+                self.longhelp = sysadmintoolkit.utils.trim_docstring(self.function.__doc__)
             else:
                 self.longhelp = 'No help available'
 

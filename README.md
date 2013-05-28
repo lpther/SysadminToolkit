@@ -62,7 +62,7 @@ Launching the app will let you use the configured command to hide more complex t
                                                  and load (shellcommand)
     [...]
     
-__Help__ is simple to add *within* your custom plugin's documentation, and presented is a convenient way:
+__Help__ is simple to add *within* your custom plugin's documentation, and presented in a convenient way:
 
 Write documentation in reStructuredText format:
 

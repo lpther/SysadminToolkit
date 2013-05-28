@@ -61,13 +61,51 @@ Launching the app will let you use the configured command to hide more complex t
     display system uptime                        Shows the current number of users
                                                  and load (shellcommand)
     [...]
+    
+__Help__ is simple to add *within* your custom plugin's documentation, and presented is a convenient way:
 
+Write documentation in reStructuredText format:
+
+    class CommandPrompt(sysadmintoolkit.plugin.Plugin):
+        '''
+        Description
+        -----------
+    
+        Provides basic commands to the sysadmin-toolkit CLI.
+    
+        Configuration
+        -------------
+    
+        *plugin-dir*
+          Directory where plugins reside. Plugins must be with the .py extension.
+    
+          Default: /etc/sysadmin-toolkit/plugin.d/
+
+Help is available in manpage format *within* the CLI:
+
+    sysadmin-toolkit(operator)# help commandprompt 
+
+    COMMANDPROMPT(COMMANDS)                                COMMANDPROMPT(COMMANDS)
+    
+    DESCRIPTION
+           Provides basic commands to the sysadmin-toolkit CLI.
+    
+    CONFIGURATION
+           plugin-dir
+                  Directory  where  plugins  reside.  Plugins must be with the .py
+                  extension.
+    
+                  Default: /etc/sysadmin-toolkit/plugin.d/
+    [...]
+
+
+    
 ## Features ##
 
-Initial release (0.1.0a) features:
+Initial release (0.1.0b) features:
 
 - CLI Features
-	- Call a command from linux's shell
+    - Call a command from linux's shell
 	- Command completion (bash style)
 	- Command conflict handling for cases where a label is entered by multiple plugins
 	- "|" support to redirect a command to another process
@@ -88,12 +126,11 @@ Initial release (0.1.0a) features:
 
 Plugins that leverage the toolkit for advanced features (why this project started in the first place)
 
-- clustering - basic cluster management features
-- lvs/keepalived - linux virtual server and keepalived for an any-node load balancing cluster
+- clustering - basic cluster management features (https://github.com/lpther/Clustering)
+- lvs/keepalived - linux virtual server and keepalived for an any-node load balancing cluster (https://github.com/lpther/LVS and https://github.com/lpther/Keepalived)
 - fibre channel - fibre channel troubleshooting toolkit
 - infiniband - infiniband troubleshooting toolkit
 	
 ## Thanks ##
 
 Khosrow Ebrahimpour for his invaluable talent and charisma
-

@@ -17,6 +17,7 @@ Brainstorming about potential improvements
 - External command call via '!'
 - ctrl-C to quit the program, requires flushing readline's buffer and quitting (dragons ahead)
 - 'enable-plugin=no' in the config to prevent from loading a module without erasing the configuration
+- Convert most dicts to ordereddict to preserve order (ex in dyn keyword fn)
 - Make a master debug log, separate from other logging config, where all debug level logs would be merged to a file
 
 ## CommandPrompt (built-in plugin) ##

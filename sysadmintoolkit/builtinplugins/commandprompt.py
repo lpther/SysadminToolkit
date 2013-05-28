@@ -84,7 +84,7 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         help_cmd._Label__is_reserved = True
         self.add_command(help_cmd)
 
-        help_latex_cmd = sysadmintoolkit.command.ExecCommand('help <plugin> latex', self, self.show_plugin_help_latex)
+        help_latex_cmd = sysadmintoolkit.command.ExecCommand('help <plugin> to-rst', self, self.show_plugin_help_rst)
         help_latex_cmd._Label__is_reserved = True
         self.add_command(help_latex_cmd)
 
@@ -322,18 +322,16 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
 
         print
 
-    def show_plugin_help_latex(self, user_input_obj):
+    def show_plugin_help_rst(self, user_input_obj):
         '''
-        Display man page for this plugin in LaTeX format for documentation creation
+        Display man page for this plugin in reStructuredText format for documentation creation
         '''
         pluginname = user_input_obj.get_entered_command().split()[1]
         plugin = self.plugin_set.get_plugins()[pluginname]
 
-        self.logger.debug('Showing latex documentation for plugin %s' % pluginname)
+        self.logger.debug('Showing rst documentation for plugin %s' % pluginname)
 
-        plugin_doc = self.get_plugin_documentation(plugin)
-
-        print docutils.core.publish_string('%s' % (plugin_doc), writer_name='latex')
+        print self.get_plugin_documentation(plugin)
 
     def show_plugin_help(self, user_input_obj):
         '''

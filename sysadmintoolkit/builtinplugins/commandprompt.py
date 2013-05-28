@@ -84,6 +84,10 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
         help_cmd._Label__is_reserved = True
         self.add_command(help_cmd)
 
+        help_latex_cmd = sysadmintoolkit.command.ExecCommand('help <plugin> latex', self, self.show_plugin_help_latex)
+        help_latex_cmd._Label__is_reserved = True
+        self.add_command(help_latex_cmd)
+
         exit_cmd = sysadmintoolkit.command.ExecCommand('exit', self, self.exit_last_commandprompt_level)
         exit_cmd._Label__is_reserved = True
         self.add_command(exit_cmd)
@@ -317,6 +321,19 @@ class CommandPrompt(sysadmintoolkit.plugin.Plugin):
             print
 
         print
+
+    def show_plugin_help_latex(self, user_input_obj):
+        '''
+        Display man page for this plugin in LaTeX format for documentation creation
+        '''
+        pluginname = user_input_obj.get_entered_command().split()[1]
+        plugin = self.plugin_set.get_plugins()[pluginname]
+
+        self.logger.debug('Showing latex documentation for plugin %s' % pluginname)
+
+        plugin_doc = self.get_plugin_documentation(plugin)
+
+        print docutils.core.publish_string('%s' % (plugin_doc), writer_name='latex')
 
     def show_plugin_help(self, user_input_obj):
         '''
